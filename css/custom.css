@@ -1,0 +1,18 @@
+/* 禁用代码块换行 */
+.highlight pre,
+pre.chroma,
+pre code,
+pre {
+    white-space: pre !important;
+    overflow-x: auto !important;
+    word-wrap: normal !important;
+    word-break: normal !important;
+}
+
+/* 可选：美化滚动条 */
+/* pre {
+    padding: 1em;
+    margin: 0.5em 0;
+    background: #f4f4f4;
+    border-radius: 4px;
+} */

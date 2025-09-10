@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Wireshark on B5juan's Blog</title><link>https://example.com/tags/wireshark/</link><description>Recent content in Wireshark on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Tue, 02 Sep 2025 17:55:19 +0800</lastBuildDate><atom:link href="https://example.com/tags/wireshark/index.xml" rel="self" type="application/rss+xml"/><item><title>MacOS Wireshark 打开多窗口解决办法</title><link>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</link><pubDate>Tue, 02 Sep 2025 17:55:19 +0800</pubDate><guid>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</guid><description>&lt;p&gt;在macOS环境下，wireshark默认无法同时打开多个窗口，当需要分析、比较多个文件时相比相对麻烦。以下记录两种解决该问题的方案。&lt;/p&gt;
+&lt;h2 id="0x00-通过终端临时解决"&gt;0x00 通过终端临时解决
+&lt;/h2&gt;&lt;p&gt;终端环境下配合“-n”、“-a”参数使用open命令打开多个窗口&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-sh" data-lang="sh"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 打开多个初始Wireshark窗口&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n /Applications/Wireshark.app
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 直接在多个窗口打开抓包文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n -a /Applications/Wireshark.app file_name.pcap
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="0x01-借助自动操作永久解决"&gt;0x01 借助自动操作永久解决
+&lt;/h2&gt;&lt;p&gt;实际也是使用open命令，但是借助macOS自带的自动操作应用程序可以实现在图形界面即可永久解决该问题。&lt;/p&gt;
+&lt;p&gt;1、打开自动操作应用程序，选择新建类型为“应用程序”&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1.png"
+width="706"
+height="406"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1_hu_f2ee6af56d13755b.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1_hu_9c9382fb7ffa32df.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="173"
+data-flex-basis="417px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2.png"
+width="2614"
+height="1456"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2_hu_8a54117026349767.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2_hu_5d9449a91a052d11.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="179"
+data-flex-basis="430px"
+&gt;&lt;/p&gt;
+&lt;p&gt;2、操作 选择 “运行shell脚本”，Shell 选择默认的“/bin/zsh”，传递输入 选择“作为自变量”，shell内容写入刚刚打开文件的命令，文件名替换为“$1”。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-sh" data-lang="sh"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n -a /Applications/Wireshark.app &lt;span class="nv"&gt;$1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3.png"
+width="1994"
+height="690"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3_hu_dd74a02d7af3e52b.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3_hu_226b17ff02e59581.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="288"
+data-flex-basis="693px"
+&gt;&lt;/p&gt;
+&lt;p&gt;3、Command+S 起个喜欢的名字保存到系统“应用程序”文件夹&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4.png"
+width="2006"
+height="1132"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4_hu_845c2fdc183177dd.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4_hu_8f268d6dfe2ebcfc.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="177"
+data-flex-basis="425px"
+&gt;&lt;/p&gt;
+&lt;p&gt;4、选择任意一个要使用wireshark打开的抓包文件，右键选择“显示简介”，在打开方式中选择刚刚保存的应用程序并点击“全部更改”，在接下来弹出的确认窗口中点击确认。&lt;/p&gt;
+&lt;p&gt;5、后续双击打开该类型抓包文件，就会移新建独立wireshark窗口的方式打开。&lt;/p&gt;</description></item></channel></rss>

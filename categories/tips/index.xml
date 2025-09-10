@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tips on B5juan's Blog</title><link>https://example.com/categories/tips/</link><description>Recent content in Tips on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Tue, 02 Sep 2025 17:55:19 +0800</lastBuildDate><atom:link href="https://example.com/categories/tips/index.xml" rel="self" type="application/rss+xml"/><item><title>MacOS Wireshark 打开多窗口解决办法</title><link>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</link><pubDate>Tue, 02 Sep 2025 17:55:19 +0800</pubDate><guid>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</guid><description>&lt;p&gt;在macOS环境下，wireshark默认无法同时打开多个窗口，当需要分析、比较多个文件时相比相对麻烦。以下记录两种解决该问题的方案。&lt;/p&gt;
+&lt;h2 id="0x00-通过终端临时解决"&gt;0x00 通过终端临时解决
+&lt;/h2&gt;&lt;p&gt;终端环境下配合“-n”、“-a”参数使用open命令打开多个窗口&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-sh" data-lang="sh"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 打开多个初始Wireshark窗口&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n /Applications/Wireshark.app
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 直接在多个窗口打开抓包文件&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n -a /Applications/Wireshark.app file_name.pcap
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="0x01-借助自动操作永久解决"&gt;0x01 借助自动操作永久解决
+&lt;/h2&gt;&lt;p&gt;实际也是使用open命令，但是借助macOS自带的自动操作应用程序可以实现在图形界面即可永久解决该问题。&lt;/p&gt;
+&lt;p&gt;1、打开自动操作应用程序，选择新建类型为“应用程序”&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1.png"
+width="706"
+height="406"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1_hu_f2ee6af56d13755b.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_1_hu_9c9382fb7ffa32df.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="173"
+data-flex-basis="417px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2.png"
+width="2614"
+height="1456"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2_hu_8a54117026349767.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_2_hu_5d9449a91a052d11.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="179"
+data-flex-basis="430px"
+&gt;&lt;/p&gt;
+&lt;p&gt;2、操作 选择 “运行shell脚本”，Shell 选择默认的“/bin/zsh”，传递输入 选择“作为自变量”，shell内容写入刚刚打开文件的命令，文件名替换为“$1”。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-sh" data-lang="sh"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;open -n -a /Applications/Wireshark.app &lt;span class="nv"&gt;$1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3.png"
+width="1994"
+height="690"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3_hu_dd74a02d7af3e52b.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_3_hu_226b17ff02e59581.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="288"
+data-flex-basis="693px"
+&gt;&lt;/p&gt;
+&lt;p&gt;3、Command+S 起个喜欢的名字保存到系统“应用程序”文件夹&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4.png"
+width="2006"
+height="1132"
+srcset="https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4_hu_845c2fdc183177dd.png 480w, https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/img_4_hu_8f268d6dfe2ebcfc.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="177"
+data-flex-basis="425px"
+&gt;&lt;/p&gt;
+&lt;p&gt;4、选择任意一个要使用wireshark打开的抓包文件，右键选择“显示简介”，在打开方式中选择刚刚保存的应用程序并点击“全部更改”，在接下来弹出的确认窗口中点击确认。&lt;/p&gt;
+&lt;p&gt;5、后续双击打开该类型抓包文件，就会移新建独立wireshark窗口的方式打开。&lt;/p&gt;</description></item><item><title>macOS pip 报错：AttributeError_ 'NoneType' object has no attribute 'get'</title><link>https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/</link><pubDate>Mon, 17 Mar 2025 12:19:31 +0800</pubDate><guid>https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/</guid><description>&lt;h2 id="0x00"&gt;0x00
+&lt;/h2&gt;&lt;p&gt;使用&lt;code&gt;pip&lt;/code&gt;命令安装依赖库时，如果遇到以下报错，提供以下一种可能的原因及解决方案：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;&amp;lt;your_python_path&amp;gt;/lib/python3.9/site-packages/pip/_vendor/urllib3/connection.py&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="mi"&gt;462&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;connect&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;cert&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;subjectAltName&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;()):&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="ne"&gt;AttributeError&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;NoneType&amp;#39;&lt;/span&gt; &lt;span class="nb"&gt;object&lt;/span&gt; &lt;span class="n"&gt;has&lt;/span&gt; &lt;span class="n"&gt;no&lt;/span&gt; &lt;span class="n"&gt;attribute&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;get&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="0x01"&gt;0x01
+&lt;/h2&gt;&lt;p&gt;由该原因导致的前提是——你所使用的&lt;code&gt;Python&lt;/code&gt;为手动编译或在&lt;code&gt;macOS&lt;/code&gt;系统上使用&lt;code&gt;pyenv&lt;/code&gt;工具安装。&lt;/p&gt;
+&lt;p&gt;以下以第二种情况为示例进行说明。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1.png"
+width="459"
+height="155"
+srcset="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1_hu_554e9dcd8e4eb2d1.png 480w, https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1_hu_7b7fb03c00eeafba.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="296"
+data-flex-basis="710px"
+&gt;&lt;/p&gt;
+&lt;p&gt;使用&lt;code&gt;pyenv&lt;/code&gt;安装&lt;code&gt;python&lt;/code&gt;时，需要依赖包括&lt;code&gt;openssl&lt;/code&gt;在内的本地库对下载下来的源码进行编译，而&lt;code&gt;macOS&lt;/code&gt;使用&lt;code&gt;HomeBrew&lt;/code&gt;进行包管理时，本地会有复数版本的&lt;code&gt;openssl&lt;/code&gt;库。从上面图片可以看到，&lt;code&gt;pyenv&lt;/code&gt;安装指定的&lt;code&gt;python&lt;/code&gt;版本时，使用的是&lt;code&gt;openssl 1.1&lt;/code&gt;，这就是原因——使用的&lt;code&gt;openssl&lt;/code&gt;库版本太老。手动编译同理。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2.png"
+width="363"
+height="47"
+srcset="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2_hu_161f04acb7b1c1e4.png 480w, https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2_hu_e8e5decba79d928d.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="772"
+data-flex-basis="1853px"
+&gt;&lt;/p&gt;
+&lt;h2 id="0x02"&gt;0x02
+&lt;/h2&gt;&lt;p&gt;解决方案1：&lt;strong&gt;指定openssl版本&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;PYTHON_CONFIGURE_OPTS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;--with-openssl=/opt/Homebrew/Cellar/openssl@3/3.1.2/&amp;#34;&lt;/span&gt; pyenv install 3.9.9
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;pre&gt;&lt;code&gt;可以使用`brew info openssl`命令获取openssl的路径和版本。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;解决方案2：&lt;strong&gt;临时禁用 SSL 验证&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pip install 包名 --trusted-host pypi.org --trusted-host files.pythonhosted.org
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;解决方案3：&lt;strong&gt;下载whl文件本地安装&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在 &lt;a class="link" href="https://pypi.org/" target="_blank" rel="noopener"
+&gt;https://pypi.org/&lt;/a&gt; 搜索并下载所需的依赖库，本地安装。&lt;/p&gt;
+&lt;p&gt;如：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pip install certifi-2025.1.31-py3-none-any.whl
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item><item><title>Linux下以root权限运行VScode</title><link>https://example.com/p/linux%E4%B8%8B%E4%BB%A5root%E6%9D%83%E9%99%90%E8%BF%90%E8%A1%8Cvscode/</link><pubDate>Thu, 27 Jul 2023 13:00:05 +0800</pubDate><guid>https://example.com/p/linux%E4%B8%8B%E4%BB%A5root%E6%9D%83%E9%99%90%E8%BF%90%E8%A1%8Cvscode/</guid><description>&lt;p&gt;设置用户数据目录，并关闭沙箱模式&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo code --no-sandbox --user-data-dir&lt;span class="o"&gt;={&lt;/span&gt;path_to_user_data_dir&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;如果白屏，需要关闭GPU加速&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo code --no-sandbox --user-data-dir&lt;span class="o"&gt;={&lt;/span&gt;path_to_user_data_dir&lt;span class="o"&gt;}&lt;/span&gt; --disable-gpu-sandbox
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item></channel></rss>

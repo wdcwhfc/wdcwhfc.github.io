@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Pip on B5juan's Blog</title><link>https://example.com/tags/pip/</link><description>Recent content in Pip on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Mon, 17 Mar 2025 12:19:31 +0800</lastBuildDate><atom:link href="https://example.com/tags/pip/index.xml" rel="self" type="application/rss+xml"/><item><title>macOS pip 报错：AttributeError_ 'NoneType' object has no attribute 'get'</title><link>https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/</link><pubDate>Mon, 17 Mar 2025 12:19:31 +0800</pubDate><guid>https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/</guid><description>&lt;h2 id="0x00"&gt;0x00
+&lt;/h2&gt;&lt;p&gt;使用&lt;code&gt;pip&lt;/code&gt;命令安装依赖库时，如果遇到以下报错，提供以下一种可能的原因及解决方案：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;File&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;&amp;lt;your_python_path&amp;gt;/lib/python3.9/site-packages/pip/_vendor/urllib3/connection.py&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="mi"&gt;462&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;connect&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;cert&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;subjectAltName&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;()):&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="ne"&gt;AttributeError&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;NoneType&amp;#39;&lt;/span&gt; &lt;span class="nb"&gt;object&lt;/span&gt; &lt;span class="n"&gt;has&lt;/span&gt; &lt;span class="n"&gt;no&lt;/span&gt; &lt;span class="n"&gt;attribute&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;get&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="0x01"&gt;0x01
+&lt;/h2&gt;&lt;p&gt;由该原因导致的前提是——你所使用的&lt;code&gt;Python&lt;/code&gt;为手动编译或在&lt;code&gt;macOS&lt;/code&gt;系统上使用&lt;code&gt;pyenv&lt;/code&gt;工具安装。&lt;/p&gt;
+&lt;p&gt;以下以第二种情况为示例进行说明。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1.png"
+width="459"
+height="155"
+srcset="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1_hu_554e9dcd8e4eb2d1.png 480w, https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_1_hu_7b7fb03c00eeafba.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="296"
+data-flex-basis="710px"
+&gt;&lt;/p&gt;
+&lt;p&gt;使用&lt;code&gt;pyenv&lt;/code&gt;安装&lt;code&gt;python&lt;/code&gt;时，需要依赖包括&lt;code&gt;openssl&lt;/code&gt;在内的本地库对下载下来的源码进行编译，而&lt;code&gt;macOS&lt;/code&gt;使用&lt;code&gt;HomeBrew&lt;/code&gt;进行包管理时，本地会有复数版本的&lt;code&gt;openssl&lt;/code&gt;库。从上面图片可以看到，&lt;code&gt;pyenv&lt;/code&gt;安装指定的&lt;code&gt;python&lt;/code&gt;版本时，使用的是&lt;code&gt;openssl 1.1&lt;/code&gt;，这就是原因——使用的&lt;code&gt;openssl&lt;/code&gt;库版本太老。手动编译同理。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2.png"
+width="363"
+height="47"
+srcset="https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2_hu_161f04acb7b1c1e4.png 480w, https://example.com/p/macos-pip-%E6%8A%A5%E9%94%99attributeerror_-nonetype-object-has-no-attribute-get/img_2_hu_e8e5decba79d928d.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="772"
+data-flex-basis="1853px"
+&gt;&lt;/p&gt;
+&lt;h2 id="0x02"&gt;0x02
+&lt;/h2&gt;&lt;p&gt;解决方案1：&lt;strong&gt;指定openssl版本&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;PYTHON_CONFIGURE_OPTS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;--with-openssl=/opt/Homebrew/Cellar/openssl@3/3.1.2/&amp;#34;&lt;/span&gt; pyenv install 3.9.9
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;pre&gt;&lt;code&gt;可以使用`brew info openssl`命令获取openssl的路径和版本。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;解决方案2：&lt;strong&gt;临时禁用 SSL 验证&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pip install 包名 --trusted-host pypi.org --trusted-host files.pythonhosted.org
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;解决方案3：&lt;strong&gt;下载whl文件本地安装&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在 &lt;a class="link" href="https://pypi.org/" target="_blank" rel="noopener"
+&gt;https://pypi.org/&lt;/a&gt; 搜索并下载所需的依赖库，本地安装。&lt;/p&gt;
+&lt;p&gt;如：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pip install certifi-2025.1.31-py3-none-any.whl
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item></channel></rss>

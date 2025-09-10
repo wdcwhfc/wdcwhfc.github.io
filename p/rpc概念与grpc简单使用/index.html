@@ -1,0 +1,278 @@
+<!doctype html><html lang=en dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content><title>RPC概念与gRPC简单使用</title><link rel=canonical href=https://example.com/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/><link rel=stylesheet href=/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css><meta property='og:title' content="RPC概念与gRPC简单使用"><meta property='og:description' content><meta property='og:url' content='https://example.com/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/'><meta property='og:site_name' content="B5juan's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='gRPC'><meta property='article:published_time' content='2023-04-20T11:24:32+08:00'><meta property='article:modified_time' content='2023-04-20T11:24:32+08:00'><meta name=twitter:title content="RPC概念与gRPC简单使用"><meta name=twitter:description content><link rel="shortcut icon" href=/favicon.ico></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="Toggle Menu">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/images/fish.jpg width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>B5juan's Blog</a></h1><h2 class=site-description></h2></div></header><ol class=menu id=main-menu><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>Dark Mode</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">Table of contents</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#1rpc概念>1、RPC概念</a><ol><li><a href=#11-定义理解>1.1 定义理解</a></li><li><a href=#12-工作模式>1.2 工作模式</a></li></ol></li><li><a href=#2grpc>2、gRPC</a><ol><li><a href=#21-简单介绍>2.1 简单介绍</a></li><li><a href=#22-protobuf>2.2 ProtoBuf</a><ol><li><a href=#step1-定义数据结构>Step1 定义数据结构</a></li><li><a href=#step2-编译类库>Step2 编译类库</a></li><li><a href=#step3-引用类库并编写程序>Step3 引用类库并编写程序</a></li></ol></li><li><a href=#23-简单使用>2.3 简单使用</a></li><li><a href=#24-简单demo>2.4 简单demo</a><ol><li><a href=#python>Python</a></li><li><a href=#javascript>Javascript</a></li></ol></li><li><a href=#25-更多>2.5 更多</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/categories/programming/>Programming</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/>RPC概念与gRPC简单使用</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Apr 20, 2023</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>4 minute read</time></div></footer></div></header><section class=article-content><h2 id=1rpc概念>1、RPC概念</h2><h3 id=11-定义理解>1.1 定义理解</h3><p>​ RPC（Remote Procedure Call，远程过程调用），直观的简单理解就是客户端调用远程的服务端提供的服务，使用场景是分布式系统或者多系统服务之间的信息交互。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>需求：对变量var进行复杂操作，这个操作封装在函数func_test<span class=o>()</span>里。
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>本地过程调用：func_test<span class=o>()</span>函数声明在本地，直接在内存中调用并获取返回值。
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>远程过程调用：func_test<span class=o>()</span>函数声明在远程某台计算机上，由于不在同一个内存空间，需要把变量var发送给该计算机并告诉该计算机使用func_test<span class=o>()</span>函数对变量var进行处理并把处理结果返回。即远程计算机充当服务端的角色，调用方是客户端。
+</span></span></code></pre></td></tr></table></div></div><p>​ RPC是一种解决方案，具体的协议或应用或框架实现有多种，常见的协议如Java RMI、SOAP（简单对象访问协议），通信框架如Netty，应用框架如gRPC、Dubbo。</p><h3 id=12-工作模式>1.2 工作模式</h3><p>RPC 工作模式是请求——响应模式，核心功能由5个部分组成：</p><ul><li>客户端——服务调用方</li><li>客户端stub——保存服务端连接信息，处理参数数据并打包为网络消息</li><li>网络传输模块——底层传输（既可以在传输层也可以在应用层）</li><li>服务端stub——接收请求消息，处理解包并传递给本地服务</li><li>服务端——真正的服务提供者</li></ul><p><img src=/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/webp.png width=560 height=401 srcset="/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/webp_hu_b86a85499387be32.png 480w, /p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/webp_hu_6438a12d9c10de63.png 1024w" loading=lazy alt=img class=gallery-image data-flex-grow=139 data-flex-basis=335px></p><p>RPC框架一般会包括传输协议和序列化协议，通信过程分以下几个步骤：</p><ol><li>客户端把参数进行序列化，转换为字节流</li><li>客户端与服务端建立网络连接 // 不算长连接的中间通信场景</li><li>客户端把字节流数据发送给服务端</li><li>服务端收到字节流数据后进行反序列化，转换为自身可以读取的数据格式</li><li>服务端处理参数得到结果</li><li>服务端把结果序列化后发送给客户端</li><li>客户端接收返回的数据并进行反序列化&mldr;</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>1、当使用RPC进行通信的时候，不需要考虑底层的通信细节，只需要专注于服务调用。
+</span></span><span class=line><span class=cl>2、传输协议可以使用tcp，也可以使用http以及udp。
+</span></span></code></pre></td></tr></table></div></div><h2 id=2grpc>2、gRPC</h2><h3 id=21-简单介绍>2.1 简单介绍</h3><p>​ <a class=link href=https://github.com/grpc/grpc target=_blank rel=noopener>gRPC</a> 是一个高性能的开源 RPC 框架，由Google开发，面向移动和 HTTP/2 设计。目前提供 C#、C++、Dart、Go、Java、Kotlin、Node、Objective-C、PHP、Python、Ruby语言支持。gRPC 默认使用protocol buffers（ProtoBuf）作为接口数据序列化方法。</p><p><img src=/p/rpc%E6%A6%82%E5%BF%B5%E4%B8%8Egrpc%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/landing-2.svg loading=lazy alt=landing-2></p><h3 id=22-protobuf>2.2 ProtoBuf</h3><p>​ <a class=link href=https://github.com/protocolbuffers/protobuf target=_blank rel=noopener>ProtoBuf</a> 是Google开发的混合语言数据标准，通过将结构化的数据进行序列化来使其用于数据存储、网络通信。可与protobuf横向对比的常见数据格式是xml和json，区别在于xml和json都是文本格式，而protobuf是二进制格式，且protobuf数据体积更小，处理更快。当然，protobuf也存在缺点——需要自定义数据结构工作量大。</p><h4 id=step1-定义数据结构>Step1 定义数据结构</h4><p>​ 使用 ProtoBuf 首先需要在 ProtoBuf 语法下自己定义数据结构（用于RPC时也就是请求和响应的消息结构），这些数据结构保存在.proto文件中。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=line><span class=cl><span class=c1>// hellogrpc.proto
+</span></span></span><span class=line><span class=cl><span class=c1>// 指定protobuf版本，目前最新的是proto3
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>syntax</span> <span class=o>=</span> <span class=s>&#34;proto3&#34;</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 定义包名，防止命名冲突
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kn>package</span> <span class=nn>Hellogrpc</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 定义数据结构
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>message</span> <span class=nc>HelloRequest</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=c1>// 必填的string类型字段，字段名称为message1，字段ID为1
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// 字段ID不能重复，取值范围为[0,2^29-1]。不同的取值占用的空间不同，1-15占用1字节，16-2047占用2字节，可以为常用字段保留较小的字段ID
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>required</span> <span class=kt>string</span> <span class=n>message1</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=c1>// 选填的int32类型字段，字段名称为message12，字段ID为2，默认值为10
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>optional</span> <span class=kt>int32</span> <span class=n>message2</span> <span class=o>=</span> <span class=mi>2</span> <span class=p>[</span><span class=k>default</span> <span class=o>=</span> <span class=mi>10</span><span class=p>];</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 枚举类型
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>enum</span> <span class=n>EnumType</span><span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>		<span class=n>TYPE1</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=c1>// proto3版本中，枚举类型首个成员必须为0
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=n>TYPE2</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>		<span class=n>TYPE3</span> <span class=o>=</span> <span class=mi>2</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>message</span> <span class=nc>HelloReply</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>		<span class=c1>// 使用自定义的枚举类型
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>EnumType</span> <span class=n>message1</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>		<span class=c1>// 可重复出现的值，可以理解成数组
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>repeated</span> <span class=kt>string</span> <span class=n>message2</span> <span class=o>=</span> <span class=mi>2</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=c1>// message嵌套
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>message</span> <span class=nc>Message3</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    		<span class=kt>string</span> <span class=n>sub_message1</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    		<span class=kt>bool</span> <span class=n>sub_message2</span> <span class=o>=</span> <span class=mi>2</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=c1>// 使用嵌套消息类型
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>repeated</span> <span class=n>Message3</span> <span class=n>message3</span> <span class=o>=</span> <span class=mi>3</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=c1>// map类型，key类型为string，value类型为int32
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>map</span><span class=p>&lt;</span><span class=kt>string</span><span class=p>,</span> <span class=kt>int32</span><span class=p>&gt;</span> <span class=n>message4</span> <span class=o>=</span> <span class=mi>4</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>ProtoBuf 定义了一套基本数据类型，以下是网上看到的一份与主流编程语言的<a class=link href=https://www.tizi365.com/archives/374.html target=_blank rel=noopener>数据类型映射表</a></p><div class=table-wrapper><table><thead><tr><th>.proto Type</th><th>Notes</th><th>C++ Type</th><th>Java Type</th><th>Python Type[2]</th><th>Go Type</th><th>Ruby Type</th><th>C# Type</th><th>PHP Type</th></tr></thead><tbody><tr><td>double</td><td></td><td>double</td><td>double</td><td>float</td><td>float64</td><td>Float</td><td>double</td><td>float</td></tr><tr><td>float</td><td></td><td>float</td><td>float</td><td>float</td><td>float32</td><td>Float</td><td>float</td><td>float</td></tr><tr><td>int32</td><td>使用变长编码，对于负值的效率很低，如果你的域有可能有负值，请使用sint64替代</td><td>int32</td><td>int</td><td>int</td><td>int32</td><td>Fixnum 或者 Bignum（根据需要）</td><td>int</td><td>integer</td></tr><tr><td>uint32</td><td>使用变长编码</td><td>uint32</td><td>int</td><td>int/long</td><td>uint32</td><td>Fixnum 或者 Bignum（根据需要）</td><td>uint</td><td>integer</td></tr><tr><td>uint64</td><td>使用变长编码</td><td>uint64</td><td>long</td><td>int/long</td><td>uint64</td><td>Bignum</td><td>ulong</td><td>integer/string</td></tr><tr><td>sint32</td><td>使用变长编码，这些编码在负值时比int32高效的多</td><td>int32</td><td>int</td><td>int</td><td>int32</td><td>Fixnum 或者 Bignum（根据需要）</td><td>int</td><td>integer</td></tr><tr><td>sint64</td><td>使用变长编码，有符号的整型值。编码时比通常的int64高效。</td><td>int64</td><td>long</td><td>int/long</td><td>int64</td><td>Bignum</td><td>long</td><td>integer/string</td></tr><tr><td>fixed32</td><td>总是4个字节，如果数值总是比总是比228大的话，这个类型会比uint32高效。</td><td>uint32</td><td>int</td><td>int</td><td>uint32</td><td>Fixnum 或者 Bignum（根据需要）</td><td>uint</td><td>integer</td></tr><tr><td>fixed64</td><td>总是8个字节，如果数值总是比总是比256大的话，这个类型会比uint64高效。</td><td>uint64</td><td>long</td><td>int/long</td><td>uint64</td><td>Bignum</td><td>ulong</td><td>integer/string</td></tr><tr><td>sfixed32</td><td>总是4个字节</td><td>int32</td><td>int</td><td>int</td><td>int32</td><td>Fixnum 或者 Bignum（根据需要）</td><td>int</td><td>integer</td></tr><tr><td>sfixed64</td><td>总是8个字节</td><td>int64</td><td>long</td><td>int/long</td><td>int64</td><td>Bignum</td><td>long</td><td>integer/string</td></tr><tr><td>bool</td><td></td><td>bool</td><td>boolean</td><td>bool</td><td>bool</td><td>TrueClass/FalseClass</td><td>bool</td><td>boolean</td></tr><tr><td>string</td><td>一个字符串必须是UTF-8编码或者7-bit ASCII编码的文本。</td><td>string</td><td>String</td><td>str/unicode</td><td>string</td><td>String (UTF-8)</td><td>string</td><td>string</td></tr><tr><td>bytes</td><td>可能包含任意顺序的字节数据。</td><td>string</td><td>ByteString</td><td>str</td><td>[]byte</td><td>String (ASCII-8BIT)</td><td>ByteString</td><td>string</td></tr></tbody></table></div><h4 id=step2-编译类库>Step2 编译类库</h4><p>​ 编辑好数据结构之后，需要对proto文件进行编译，将其转换为需要的语言版本的代码。ProtoBuf的编译器是protoc，可以在<a class=link href=https://github.com/protocolbuffers/protobuf/releases target=_blank rel=noopener>官方GitHub项目</a>下载对应版本安装使用，以Python为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># --python_out 指定java版本类库存放目录为当前目录;	hellogrpc.proto指定要编译的proto文件；无需指定生成的文件名</span>
+</span></span><span class=line><span class=cl>protoc --python_out<span class=o>=</span>./ hellogrpc.proto
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Python grpc项目中，则可通过安装grpcio_tools依赖库中带有的protoc进行编译</span>
+</span></span><span class=line><span class=cl>1、pip install grpcio_tools
+</span></span><span class=line><span class=cl>2、python -m grpcio_tools.protoc --python_out<span class=o>=</span>. --grpc_python_out<span class=o>=</span>. hellogrpc.proto
+</span></span></code></pre></td></tr></table></div></div><h4 id=step3-引用类库并编写程序>Step3 引用类库并编写程序</h4><p>​ 上述编译步骤后，会在当前目录生成hellogrpc_pb2.py，里面主要包含proto文件定义的数据结构类；Python grpc项目中通过grpcio_tools执行的命令则还会生成hellogrpc_pb2_grpc.py文件，里面会包含客户端和服务端代码，也就是上文提到的stub部分，程序员只需要对其进行调用即可。其他语言使用方法类似（Go语言需单独安装插件，Node则会自动编译无需手动执行）。</p><h3 id=23-简单使用>2.3 简单使用</h3><p>​ 上文说到Python的grpcio_tools编译proto文件时还会生成projectName_pb2_grpc.py文件，其中包含客户端和服务端代码，也就是要调用的stub，而stub的作用就是打包参数数据并发送或接收数据并解包把参数传递给真正的功能代码，所以怎么正确的解包其实也是写在proto文件中，这部分就是定义的service的格式。</p><p>​ 使用gRPC需要先定义service，指定可以被调用的方法、需要的参数和返回值。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=line><span class=cl><span class=n>syntax</span> <span class=o>=</span> <span class=s>&#34;proto3&#34;</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kn>package</span> <span class=nn>hellogrpc</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 定义一个名为Greeter的服务
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>service</span> <span class=n>Greeter</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>		<span class=c1>// 定义一个名为SayHello的方法，这个方法接收HelloRequest消息作为参数，返回HelloReply消息
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>rpc</span> <span class=n>SayHello</span> <span class=p>(</span><span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>HelloReply</span><span class=p>)</span> <span class=p>{}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>message</span> <span class=nc>HelloRequest</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=kt>string</span> <span class=kd>message</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>message</span> <span class=nc>HelloReply</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=kt>string</span> <span class=kd>message</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>​ gRPC支持四种方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=line><span class=cl><span class=c1>// 普通 RPC，客户端发送一次请求，服务端响应一次，基本就是远程的普通函数调用
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>rpc</span> <span class=n>SayHello1</span><span class=p>(</span><span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>HelloResponse</span><span class=p>){}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 服务端流式 RPC，客户端发送一次请求，服务端可响应多次，客户端一直接收响应，直到本次rpc调用结束。
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>rpc</span> <span class=n>SayHello2</span><span class=p>(</span><span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>stream</span> <span class=n>HelloResponse</span><span class=p>){}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 客户端流式 RPC，客户端连续请求，服务端响应一次。
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>rpc</span> <span class=n>SayHello3</span><span class=p>(</span><span class=n>stream</span> <span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>HelloResponse</span><span class=p>){}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c1>// 双向流式 RPC，客户端和服务端都可以通过一条流连续发出消息，这两条互相独立，怎么响应由服务端决定。
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>rpc</span> <span class=n>SayHello4</span><span class=p>(</span><span class=n>stream</span> <span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>stream</span> <span class=n>HelloResponse</span><span class=p>){}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=24-简单demo>2.4 简单demo</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=line><span class=cl><span class=c1>// hellogrpc.proto
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>syntax</span> <span class=o>=</span> <span class=s>&#34;proto3&#34;</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kn>package</span> <span class=nn>hellogrpc</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>service</span> <span class=n>Greeter</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=k>rpc</span> <span class=n>SayHello</span> <span class=p>(</span><span class=n>HelloRequest</span><span class=p>)</span> <span class=k>returns</span> <span class=p>(</span><span class=n>HelloReply</span><span class=p>)</span> <span class=p>{}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>message</span> <span class=nc>HelloRequest</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=kt>string</span> <span class=kd>message</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=kd>message</span> <span class=nc>HelloReply</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=kt>string</span> <span class=kd>message</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><h4 id=python>Python</h4><div class=highlight><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=ln> 1</span><span class=cl><span class=c1># server.python</span>
+</span></span><span class=line><span class=ln> 2</span><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=ln> 3</span><span class=cl><span class=kn>import</span> <span class=nn>grpc</span>
+</span></span><span class=line><span class=ln> 4</span><span class=cl><span class=kn>from</span> <span class=nn>concurrent</span> <span class=kn>import</span> <span class=n>futures</span>
+</span></span><span class=line><span class=ln> 5</span><span class=cl><span class=kn>import</span> <span class=nn>hellogrpc_pb2_grpc</span>
+</span></span><span class=line><span class=ln> 6</span><span class=cl><span class=kn>import</span> <span class=nn>hellogrpc_pb2</span>
+</span></span><span class=line><span class=ln> 7</span><span class=cl>
+</span></span><span class=line><span class=ln> 8</span><span class=cl><span class=n>_ONE_DAY_IN_SECONDS</span> <span class=o>=</span> <span class=mi>60</span> <span class=o>*</span> <span class=mi>60</span> <span class=o>*</span> <span class=mi>24</span>
+</span></span><span class=line><span class=ln> 9</span><span class=cl>
+</span></span><span class=line><span class=ln>10</span><span class=cl>
+</span></span><span class=line><span class=ln>11</span><span class=cl><span class=k>class</span> <span class=nc>Greeter</span><span class=p>(</span><span class=n>hellogrpc_pb2_grpc</span><span class=o>.</span><span class=n>GreeterServicer</span><span class=p>):</span>
+</span></span><span class=line><span class=ln>12</span><span class=cl>    <span class=n>flag</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=ln>13</span><span class=cl>
+</span></span><span class=line><span class=ln>14</span><span class=cl>    <span class=k>def</span> <span class=nf>SayHello</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>request</span><span class=p>,</span> <span class=n>context</span><span class=p>):</span>
+</span></span><span class=line><span class=ln>15</span><span class=cl>        <span class=n>name</span> <span class=o>=</span> <span class=n>request</span><span class=o>.</span><span class=n>message</span>
+</span></span><span class=line><span class=ln>16</span><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>flag</span> <span class=o>+=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=ln>17</span><span class=cl>        <span class=k>return</span> <span class=n>hellogrpc_pb2</span><span class=o>.</span><span class=n>HelloReply</span><span class=p>(</span><span class=n>message</span><span class=o>=</span><span class=s2>&#34;[&#34;</span> <span class=o>+</span> <span class=nb>str</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>flag</span><span class=p>)</span> <span class=o>+</span> <span class=s2>&#34;] &#34;</span> <span class=o>+</span> <span class=n>name</span><span class=o>.</span><span class=n>upper</span><span class=p>())</span>
+</span></span><span class=line><span class=ln>18</span><span class=cl>
+</span></span><span class=line><span class=ln>19</span><span class=cl>
+</span></span><span class=line><span class=ln>20</span><span class=cl><span class=k>def</span> <span class=nf>server</span><span class=p>():</span>
+</span></span><span class=line><span class=ln>21</span><span class=cl>    <span class=n>grpcServer</span> <span class=o>=</span> <span class=n>grpc</span><span class=o>.</span><span class=n>server</span><span class=p>(</span><span class=n>futures</span><span class=o>.</span><span class=n>ThreadPoolExecutor</span><span class=p>(</span><span class=n>max_workers</span><span class=o>=</span><span class=mi>10</span><span class=p>))</span>
+</span></span><span class=line><span class=ln>22</span><span class=cl>    <span class=n>Greeter_1</span> <span class=o>=</span> <span class=n>Greeter</span><span class=p>()</span>
+</span></span><span class=line><span class=ln>23</span><span class=cl>    <span class=n>hellogrpc_pb2_grpc</span><span class=o>.</span><span class=n>add_GreeterServicer_to_server</span><span class=p>(</span><span class=n>Greeter_1</span><span class=p>,</span> <span class=n>grpcServer</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>24</span><span class=cl>    <span class=n>grpcServer</span><span class=o>.</span><span class=n>add_insecure_port</span><span class=p>(</span><span class=s2>&#34;127.0.0.1:4444&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>25</span><span class=cl>    <span class=n>grpcServer</span><span class=o>.</span><span class=n>start</span><span class=p>()</span>
+</span></span><span class=line><span class=ln>26</span><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=s2>&#34;[*] gRPC server successfully started&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>27</span><span class=cl>
+</span></span><span class=line><span class=ln>28</span><span class=cl>    <span class=k>try</span><span class=p>:</span>
+</span></span><span class=line><span class=ln>29</span><span class=cl>        <span class=k>while</span> <span class=kc>True</span><span class=p>:</span>
+</span></span><span class=line><span class=ln>30</span><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=n>_ONE_DAY_IN_SECONDS</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>31</span><span class=cl>    <span class=k>except</span> <span class=ne>KeyboardInterrupt</span><span class=p>:</span>
+</span></span><span class=line><span class=ln>32</span><span class=cl>        <span class=n>grpcServer</span><span class=o>.</span><span class=n>stop</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>33</span><span class=cl>
+</span></span><span class=line><span class=ln>34</span><span class=cl>
+</span></span><span class=line><span class=ln>35</span><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&#34;__main__&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=ln>36</span><span class=cl>    <span class=n>server</span><span class=p>()</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=ln>1</span><span class=cl><span class=c1># client.py</span>
+</span></span><span class=line><span class=ln>2</span><span class=cl><span class=kn>import</span> <span class=nn>grpc</span>
+</span></span><span class=line><span class=ln>3</span><span class=cl><span class=kn>import</span> <span class=nn>hellogrpc_pb2</span>
+</span></span><span class=line><span class=ln>4</span><span class=cl><span class=kn>import</span> <span class=nn>hellogrpc_pb2_grpc</span>
+</span></span><span class=line><span class=ln>5</span><span class=cl>
+</span></span><span class=line><span class=ln>6</span><span class=cl><span class=n>channel</span> <span class=o>=</span> <span class=n>grpc</span><span class=o>.</span><span class=n>insecure_channel</span><span class=p>(</span><span class=s2>&#34;127.0.0.1:4444&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>7</span><span class=cl><span class=n>client</span> <span class=o>=</span> <span class=n>hellogrpc_pb2_grpc</span><span class=o>.</span><span class=n>GreeterStub</span><span class=p>(</span><span class=n>channel</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>8</span><span class=cl><span class=n>rsp</span> <span class=o>=</span> <span class=n>client</span><span class=o>.</span><span class=n>SayHello</span><span class=p>(</span><span class=n>hellogrpc_pb2</span><span class=o>.</span><span class=n>HelloRequest</span><span class=p>(</span><span class=n>message</span><span class=o>=</span><span class=s2>&#34;aaa&#34;</span><span class=p>))</span>
+</span></span><span class=line><span class=ln>9</span><span class=cl><span class=nb>print</span><span class=p>(</span><span class=n>rsp</span><span class=o>.</span><span class=n>message</span><span class=p>)</span>
+</span></span></code></pre></div><h4 id=javascript>Javascript</h4><div class=highlight><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=ln> 1</span><span class=cl><span class=kr>const</span> <span class=nx>grpc</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s1>&#39;@grpc/grpc-js&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=ln> 2</span><span class=cl><span class=kr>const</span> <span class=nx>hello_proto</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s1>&#39;./proto&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=ln> 3</span><span class=cl>
+</span></span><span class=line><span class=ln> 4</span><span class=cl><span class=c1>//server.js
+</span></span></span><span class=line><span class=ln> 5</span><span class=cl><span class=c1></span><span class=kd>let</span> <span class=nx>cnt</span> <span class=o>=</span> <span class=mi>1</span>
+</span></span><span class=line><span class=ln> 6</span><span class=cl>
+</span></span><span class=line><span class=ln> 7</span><span class=cl><span class=kd>function</span> <span class=nx>sayHello</span><span class=p>(</span><span class=nx>call</span><span class=p>,</span> <span class=nx>callback</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=ln> 8</span><span class=cl>    <span class=nx>callback</span><span class=p>(</span><span class=kc>null</span><span class=p>,</span> <span class=p>{</span> <span class=nx>message</span><span class=o>:</span> <span class=sb>`[</span><span class=si>${</span><span class=nx>cnt</span><span class=o>++</span><span class=si>}</span><span class=sb>] echo: `</span> <span class=o>+</span> <span class=nx>call</span><span class=p>.</span><span class=nx>request</span><span class=p>.</span><span class=nx>message</span><span class=p>})</span>
+</span></span><span class=line><span class=ln> 9</span><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=ln>10</span><span class=cl>
+</span></span><span class=line><span class=ln>11</span><span class=cl><span class=kd>function</span> <span class=nx>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=ln>12</span><span class=cl>    <span class=kd>var</span> <span class=nx>server</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>grpc</span><span class=p>.</span><span class=nx>Server</span><span class=p>()</span>
+</span></span><span class=line><span class=ln>13</span><span class=cl>    <span class=nx>server</span><span class=p>.</span><span class=nx>addService</span><span class=p>(</span><span class=nx>hello_proto</span><span class=p>.</span><span class=nx>Greeter</span><span class=p>.</span><span class=nx>service</span><span class=p>,</span> <span class=p>{</span> <span class=nx>sayHello</span><span class=o>:</span> <span class=nx>sayHello</span> <span class=p>})</span>
+</span></span><span class=line><span class=ln>14</span><span class=cl>    <span class=nx>server</span><span class=p>.</span><span class=nx>bindAsync</span><span class=p>(</span><span class=s1>&#39;0.0.0.0:4444&#39;</span><span class=p>,</span> <span class=nx>grpc</span><span class=p>.</span><span class=nx>ServerCredentials</span><span class=p>.</span><span class=nx>createInsecure</span><span class=p>(),</span> <span class=p>()</span> <span class=p>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=ln>15</span><span class=cl>        <span class=nx>server</span><span class=p>.</span><span class=nx>start</span><span class=p>()</span>
+</span></span><span class=line><span class=ln>16</span><span class=cl>        <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=s1>&#39;grpc server started&#39;</span><span class=p>)</span>        
+</span></span><span class=line><span class=ln>17</span><span class=cl>    <span class=p>})</span>
+</span></span><span class=line><span class=ln>18</span><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=ln>19</span><span class=cl>
+</span></span><span class=line><span class=ln>20</span><span class=cl><span class=nx>main</span><span class=p>()</span>
+</span></span><span class=line><span class=ln>21</span><span class=cl>
+</span></span><span class=line><span class=ln>22</span><span class=cl><span class=c1>// client.js
+</span></span></span><span class=line><span class=ln>23</span><span class=cl><span class=c1></span><span class=kd>function</span> <span class=nx>main</span><span class=p>(){</span>
+</span></span><span class=line><span class=ln>24</span><span class=cl>  <span class=kd>var</span> <span class=nx>client</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>hello_proto</span><span class=p>.</span><span class=nx>Greeter</span><span class=p>(</span><span class=s1>&#39;127.0.0.1:4444&#39;</span><span class=p>,</span> <span class=nx>grpc</span><span class=p>.</span><span class=nx>credentials</span><span class=p>.</span><span class=nx>createInsecure</span><span class=p>())</span>
+</span></span><span class=line><span class=ln>25</span><span class=cl>    <span class=nx>client</span><span class=p>.</span><span class=nx>sayHello</span><span class=p>({</span><span class=nx>message</span><span class=o>:</span> <span class=s2>&#34;bbb&#34;</span><span class=p>},</span> <span class=kd>function</span><span class=p>(</span><span class=nx>err</span><span class=p>,</span> <span class=nx>response</span><span class=p>){</span>
+</span></span><span class=line><span class=ln>26</span><span class=cl>        <span class=k>if</span><span class=p>(</span><span class=nx>err</span><span class=p>){</span>
+</span></span><span class=line><span class=ln>27</span><span class=cl>            <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>28</span><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=ln>29</span><span class=cl>        <span class=k>else</span><span class=p>{</span>
+</span></span><span class=line><span class=ln>30</span><span class=cl>            <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>response</span><span class=p>.</span><span class=nx>message</span><span class=p>)</span>
+</span></span><span class=line><span class=ln>31</span><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=ln>32</span><span class=cl>    <span class=p>})</span>
+</span></span><span class=line><span class=ln>33</span><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=ln>34</span><span class=cl>
+</span></span><span class=line><span class=ln>35</span><span class=cl><span class=nx>main</span><span class=p>()</span>
+</span></span></code></pre></div><h3 id=25-更多>2.5 更多</h3><ul><li><p>认证机制——TLS、Google 认证、自定义认证接口</p></li><li><p>错误处理</p></li><li><p>&mldr;&mldr;</p></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/grpc/>GRPC</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>Related content</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/p/java-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/><div class=article-details><h2 class=article-title>Java 序列化与反序列化</h2></div></a></article><article><a href=/p/java-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/><div class=article-details><h2 class=article-title>Java 动态代理</h2></div></a></article><article><a href=/p/tomcat/><div class=article-details><h2 class=article-title>Tomcat</h2></div></a></article><article><a href=/p/diff-myers-%E7%AE%97%E6%B3%95/><div class=article-details><h2 class=article-title>Diff: Myers 算法</h2></div></a></article><article><a href=/p/sqlalchemy-%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/><div class=article-details><h2 class=article-title>SQLAlchemy 简单使用</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2025 B5juan's Blog</section><section class=powerby>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>Theme <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> designed by <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
