@@ -252,9 +252,11 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;11&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// ServiceImpl.func_1&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;12&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// post of static proxy&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;静态代理不够灵活，需要跟目标类实现同一接口。接口发生变化时，需要手动同步更改目标类和代理类。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;静态代理不够灵活，需要跟目标类实现同一接口。接口发生变化时，需要手动同步更改目标类和代理类。&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;当需要代理多个类时，不论是采取一个代理类对应一个业务类的方式还是一个代理类实现所有业务类接口的方式，都会使得代理类的代码很臃肿。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;当需要代理多个类时，不论是采取一个代理类对应一个业务类的方式还是一个代理类实现所有业务类接口的方式，都会使得代理类的代码很臃肿。&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;h2 id="动态代理"&gt;动态代理
 &lt;/h2&gt;&lt;h3 id="jdk-动态代理"&gt;JDK 动态代理
 &lt;/h3&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-java" data-lang="java"&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 1&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;java.lang.reflect.InvocationHandler&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
@@ -309,7 +311,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;17&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// post of JDK proxy&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;使用反射的方式实现代理，需要目标业务类实现了接口。&lt;/p&gt;
-&lt;p&gt;实现与目标业务类相同的接口，并把代理类的所有方法指向绑定的handler对象的 invoke() 方法。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;实现与目标业务类相同的接口，并把代理类的所有方法指向绑定的handler对象的 invoke() 方法。&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;h3 id="cglib-动态代理"&gt;CGLIB 动态代理
 &lt;/h3&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-java" data-lang="java"&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 1&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;net.sf.cglib.proxy.MethodInterceptor&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 2&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;net.sf.cglib.proxy.MethodProxy&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
@@ -381,7 +384,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;33&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;34&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;基于ASM机制实现，创建业务类的子类作为代理类，在子类中采用方法拦截的技术拦截所有父类方法的调用，顺势织入横切逻辑，来实现动态代理。&lt;/p&gt;&lt;/blockquote&gt;</description></item><item><title>Tomcat</title><link>https://example.com/p/tomcat/</link><pubDate>Mon, 11 Aug 2025 15:55:19 +0800</pubDate><guid>https://example.com/p/tomcat/</guid><description>&lt;p&gt;&lt;code&gt;Tomcat&lt;/code&gt;是由 Apache 软件基金会属下 Jakarta 项目开发的 &lt;code&gt;Servlet&lt;/code&gt; 容器，实现了对&lt;code&gt;Servlet&lt;/code&gt;和Java Server Page（JSP）的支持。由于 Tomcat 本身也内含了 HTTP 服务器，因此也可以视作单独的 We b服务器。简单来说，Tomcat 可以看成是 Web 服务器 + Servlet 容器。&lt;/p&gt;
+&lt;p&gt;基于ASM机制实现，创建业务类的子类作为代理类，在子类中采用方法拦截的技术拦截所有父类方法的调用，顺势织入横切逻辑，来实现动态代理。&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>Tomcat</title><link>https://example.com/p/tomcat/</link><pubDate>Mon, 11 Aug 2025 15:55:19 +0800</pubDate><guid>https://example.com/p/tomcat/</guid><description>&lt;p&gt;&lt;code&gt;Tomcat&lt;/code&gt;是由 Apache 软件基金会属下 Jakarta 项目开发的 &lt;code&gt;Servlet&lt;/code&gt; 容器，实现了对&lt;code&gt;Servlet&lt;/code&gt;和Java Server Page（JSP）的支持。由于 Tomcat 本身也内含了 HTTP 服务器，因此也可以视作单独的 We b服务器。简单来说，Tomcat 可以看成是 Web 服务器 + Servlet 容器。&lt;/p&gt;
 &lt;h2 id="0x01-架构"&gt;0x01 架构
 &lt;/h2&gt;&lt;p&gt;&lt;code&gt;Service&lt;/code&gt; + &lt;code&gt;Connector&lt;/code&gt; + &lt;code&gt;Container&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img src="https://goodapple.top/wp-content/uploads/2022/04/Tomcat-2.png"
