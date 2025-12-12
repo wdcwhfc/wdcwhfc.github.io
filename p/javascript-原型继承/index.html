@@ -1,0 +1,195 @@
+<!doctype html><html lang=en dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content><title>JavaScript 原型继承</title><link rel=canonical href=https://example.com/p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/><link rel=stylesheet href=/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="JavaScript 原型继承"><meta property='og:description' content><meta property='og:url' content='https://example.com/p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/'><meta property='og:site_name' content="B5juan's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2025-12-10T18:07:37+08:00'><meta property='article:modified_time' content='2025-12-10T18:07:37+08:00'><meta name=twitter:title content="JavaScript 原型继承"><meta name=twitter:description content><link rel="shortcut icon" href=/favicon.ico></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="Toggle Menu">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/images/fish.jpg width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>B5juan's Blog</a></h1><h2 class=site-description></h2></div></header><ol class=menu id=main-menu><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>Dark Mode</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">Table of contents</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#0x00-前言>0x00 前言</a></li><li><a href=#0x01-创建对象>0x01 创建对象</a></li><li><a href=#0x02-原型对象>0x02 原型对象</a></li><li><a href=#0x03-原型继承>0x03 原型继承</a></li><li><a href=#0x04-原型链>0x04 原型链</a></li><li><a href=#0x05-其他继承方式>0x05 其他继承方式</a><ol><li><a href=#objectcreate>Object.create()</a></li><li><a href=#class-extends>class extends</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/categories/programming/>Programming
+</a><a href=/categories/javascript/>JavaScript</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/>JavaScript 原型继承</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Dec 10, 2025</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>3 minute read</time></div></footer></div></header><section class=article-content><h2 id=0x00-前言>0x00 前言</h2><p>JavaScript 中所有的数据都是 <code>对象</code>，且与 Java 等常见语言的面向对象编程不同，ES6 之前，JavaScript 没有 <code>类</code>，所有的对象都是 <code>实例</code>，通过<code>原型</code>实现继承等面向对象的概念。</p><h2 id=0x01-创建对象>0x01 创建对象</h2><p>JS 中创建对象有多种方式，最基础的是直接通过<code>{...}</code>创建:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Tom</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>name</span><span class=o>:</span> <span class=s1>&#39;Tom&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>say</span><span class=o>:</span> <span class=kd>function</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>        <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`hello, I&#39;m </span><span class=si>${</span><span class=k>this</span><span class=p>.</span><span class=nx>name</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>Tom</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// hello, I&#39;m Tom
+</span></span></span></code></pre></td></tr></table></div></div><p>如果要为 Bob 也创建这么一个类似的对象，但是不想重复创建 <code>say</code> 函数，可以这么操作：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Bob</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>name</span><span class=o>:</span> <span class=s1>&#39;Bob&#39;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=nx>Bob</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>=</span> <span class=nx>Tom</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nx>Bob</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// hello, I&#39;m Bob
+</span></span></span></code></pre></td></tr></table></div></div><p>先不管 <code>__proto__</code> 是什么。使用上述方法每创建一个新对象后还需要手动指定一次 <code>__proto__</code> ，非常麻烦。</p><p>那换一种熟悉的方法，通过构造函数来构造对象？JavaScript 自然是支持的，虽然有些差异：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>function</span> <span class=nx>Person</span><span class=p>(</span><span class=nx>name</span><span class=p>){</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>name</span> <span class=o>=</span> <span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>say</span> <span class=o>=</span> <span class=kd>function</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>        <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`hello, I&#39;m </span><span class=si>${</span><span class=k>this</span><span class=p>.</span><span class=nx>name</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Alice</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Alice&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Cloud</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Cloud&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>Alice</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// hello, I&#39;m Alice
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>Cloud</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// hello, I&#39;m Cloud
+</span></span></span></code></pre></td></tr></table></div></div><p>直接观察，可以发现 <code>Person()</code> 函数跟其他普通函数貌似没有什么区别，实际也确实没什么区别。只是在 JavaScript 中，函数本身也是对象，可以通过 <code>new</code> 关键字调用函数，并返回一个对象实例。</p><blockquote><p>⚠️ 如果不使用 <code>new</code>，就是调用普通函数，没有显式 return 就返回undefined；如果使用 <code>new</code> 关键字，就变成调用一个构造函数，<code>this</code> 指向新创建的对象，并默认返回 <code>this</code>。</p></blockquote><p>但是观察以下代码及运行结果：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>say</span> <span class=o>===</span> <span class=nx>Cloud</span><span class=p>.</span><span class=nx>say</span><span class=p>);</span> <span class=c1>// false
+</span></span></span></code></pre></td></tr></table></div></div><p>可以看到，虽然 Alice 和 Cloud 由同一个构造函数创建，但<code>Alice.say</code> 和 <code>Cloud.say</code> 是两个不同的函数，它们是独立的两个不同对象实例的属性。这也就意味着，这两个函数功能乃至函数名称完全一致的不同函数，需要存两份，并且随着对象创建越多就要存更多份。</p><p>要解决这个问题，节省内存，就要用到前文提过的通过<code>原型</code>来实现<code>继承</code>。</p><h2 id=0x02-原型对象>0x02 原型对象</h2><p>前面已经使用 <code>Bob.__proto__ = Tom;</code> 来使 Bob 继承了 Tom 的 age 属性和 say 函数。<code>__proto__</code> 是所有实例都拥有的一个属性，指向创建实例时构造函数的原型对象(prototype)，可以用于获取原型也可以用于设置原型（但不推荐使用）。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>function</span> <span class=nx>Person</span><span class=p>(</span><span class=nx>name</span><span class=p>){</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>name</span> <span class=o>=</span> <span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>say</span> <span class=o>=</span> <span class=kd>function</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>        <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`hello, I&#39;m </span><span class=si>${</span><span class=k>this</span><span class=p>.</span><span class=nx>name</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Alice</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Alice&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Cloud</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Cloud&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span> <span class=c1>// {}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>===</span> <span class=nx>Cloud</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>  <span class=c1>// true
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Cloud</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>===</span> <span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>);</span> <span class=c1>// true
+</span></span></span></code></pre></td></tr></table></div></div><p>可以看到，Alice 的 <code>__proto__</code> 属性是一个没有任何属性的对象（当然实际是有一些属性的），且完全等于 Cloud 的 <code>__proto__</code> 属性，也等于构造函数 <code>Person</code> 的 <code>prototype</code> 属性。所以，如果一些通用的属性或函数不在构造函数体中定义，而在构造函数的 <code>prototype</code> 中定义，那么所有实例对象都会共享这些属性或函数：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>function</span> <span class=nx>Person</span><span class=p>(</span><span class=nx>name</span><span class=p>,</span> <span class=nx>age</span><span class=p>){</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>name</span> <span class=o>=</span> <span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>.</span><span class=nx>say</span> <span class=o>=</span> <span class=kd>function</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`hello, I&#39;m </span><span class=si>${</span><span class=k>this</span><span class=p>.</span><span class=nx>name</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Alice</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Alice&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Cloud</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Person</span><span class=p>(</span><span class=s1>&#39;Cloud&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>           <span class=c1>// { say: [Function (anonymous)] }
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>say</span> <span class=o>===</span> <span class=nx>Cloud</span><span class=p>.</span><span class=nx>say</span><span class=p>);</span>   <span class=c1>// true
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Alice</span><span class=p>.</span><span class=nx>prototype</span><span class=p>);</span>           <span class=c1>// undefined
+</span></span></span></code></pre></td></tr></table></div></div><p>小结：</p><ul><li>所有实例都有一个 <code>__proto__</code> 属性（原型），指向其构造函数的 <code>prototype</code> 属性。</li><li>同一个构造函数创建的实例，<code>__proto__</code> 属性指向同一个对象。</li><li><code>prototype</code> 是函数的属性，用于定义实例的原型对象。一般实例没有 <code>prototype</code> 属性。</li></ul><h2 id=0x03-原型继承>0x03 原型继承</h2><p>以上，我们已经知道可以通过构造函数的 <code>prototype</code> 属性为所有该函数实例声明需要的一些属性/函数。</p><p>进一步的，如果要构造一个新的构造函数 Student，使其实现 Java 等语言中继承自 Person 的效果（不影响 Person 对象的基础上扩展 Person），可以采用如下方式：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kd>function</span> <span class=nx>Person</span><span class=p>(</span><span class=nx>name</span><span class=p>){</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=nx>name</span> <span class=o>=</span> <span class=nx>name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>.</span><span class=nx>say</span> <span class=o>=</span> <span class=kd>function</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`hello, I&#39;m </span><span class=si>${</span><span class=k>this</span><span class=p>.</span><span class=nx>name</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>function</span> <span class=nx>Student</span><span class=p>(</span><span class=nx>name</span><span class=p>,</span> <span class=nx>grade</span><span class=p>){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>Person</span><span class=p>.</span><span class=nx>call</span><span class=p>(</span><span class=k>this</span><span class=p>,</span> <span class=nx>name</span><span class=p>);</span> <span class=c1>// 调用构造函数
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>this</span><span class=p>.</span><span class=nx>grade</span> <span class=o>=</span> <span class=nx>grade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>Student</span><span class=p>.</span><span class=nx>prototype</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>=</span> <span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Eve</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Student</span><span class=p>(</span><span class=s1>&#39;Eve&#39;</span><span class=p>,</span> <span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>);</span>   <span class=c1>// Student { name: &#39;Eve&#39;, grade: 1 }
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>Eve</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span>          <span class=c1>// hello, I&#39;m Eve
+</span></span></span></code></pre></td></tr></table></div></div><p>可能的问题：</p><ul><li>为什么要使 <code>Student.prototype.__proto__ = Person.prototype</code>，而不是直接让 <code>Student.prototype = Person.prototype</code>?<ul><li>因为后者会导致 <code>Student.prototype</code> 和 <code>Person.prototype</code> 指向同一个对象，致使 <code>Student.prototype</code> 被修改（譬如添加新的属性或函数）时， <code>Person.prototype</code> 也会被修改。这是不符合预期的。</li></ul></li></ul><h2 id=0x04-原型链>0x04 原型链</h2><p>以上继承的方法实现的基础就是【原型链】。简单理解，原型链的本质是【对象的 <code>__proto__</code> 属性向上递归查找的链条】。</p><ul><li>当访问一个对象的属性/方法时，会先查找本身的属性/方法；</li><li>如果找不到，就通过 <code>__proto__</code> 属性，查找其原型对象的属性/方法；</li><li>如果还查不到，就通过原型对象的 <code>__proto__</code> 属性，查找该原型对象的原型对象的属性/方法；</li><li>以此类推，直到找到属性/方法或者到达原型链的顶端。</li><li>原型链的顶端是 <code>Object</code> 的 <code>prototype</code> ：<code>[Object: null prototype] {}</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=nx>Student</span><span class=p>.</span><span class=nx>prototype</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>=</span> <span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Eve</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Student</span><span class=p>(</span><span class=s1>&#39;Eve&#39;</span><span class=p>,</span> <span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>                     <span class=c1>// Person {}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>           <span class=c1>// { say: [Function (anonymous)] }
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span> <span class=c1>// [Object: null prototype] {}
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=nx>Eve</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// say 函数来自 Eve 对象的原型对象的原型对象
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>原型链示意图：</strong></p><p><img src=/p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/JavaScript_Prototype_Chain.png width=3249 height=1500 srcset="/p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/JavaScript_Prototype_Chain_hu_5d23a40ad7745bcb.png 480w, /p/javascript-%E5%8E%9F%E5%9E%8B%E7%BB%A7%E6%89%BF/JavaScript_Prototype_Chain_hu_3fc2b63e84fa15c2.png 1024w" loading=lazy alt=原型链 class=gallery-image data-flex-grow=216 data-flex-basis=519px></p><h2 id=0x05-其他继承方式>0x05 其他继承方式</h2><h3 id=objectcreate>Object.create()</h3><p>如上介绍，继承是通过原型链，原型链本质是 <code>__proto__</code> 属性的递归链。但是 <code>__proto__</code> 属性不建议这么直接使用，一般采取以下方式：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=c1>// Object.create(X) 函数创建一个新对象，其 __proto__ 严格等于 X
+</span></span></span><span class=line><span class=cl><span class=c1>// 如果 X 是 null，则该对象为 [Object: null prototype] {} ，没有 __proto__ 属性
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>Student</span><span class=p>.</span><span class=nx>prototype</span> <span class=o>=</span> <span class=nb>Object</span><span class=p>.</span><span class=nx>create</span><span class=p>(</span><span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>let</span> <span class=nx>Eve2</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Student</span><span class=p>(</span><span class=s1>&#39;Eve2&#39;</span><span class=p>,</span> <span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>                     <span class=c1>// Person {}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>           <span class=c1>// { say: [Function (anonymous)] }
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span> <span class=c1>// [Object: null prototype] {}
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=nx>Eve2</span><span class=p>.</span><span class=nx>say</span><span class=p>();</span> <span class=c1>// hello, I&#39;m Eve2
+</span></span></span></code></pre></td></tr></table></div></div><p>这种方式创建的 <code>Student</code> 实例 <code>Eve2</code> 与 #0x03 中的 <code>Student</code> 实例 <code>Eve</code> 没有太大区别，本质是一样的，二者的 <code>__proto__</code> 都指向各自构造函数的 <code>prototype</code>。其二者构造函数的 <code>prototype</code> 都是 <code>__proto__</code> 属性指向 <code>Person.prototype</code> 的对象，只不过基于不同的方式创建。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>)</span>      <span class=c1>// Person {}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>)</span>     <span class=c1>// Person {}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>===</span> <span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>                      <span class=c1>// false
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>===</span> <span class=nx>Eve2</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>);</span>  <span class=c1>// true
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=nx>Eve</span><span class=p>.</span><span class=nx>__proto__</span><span class=p>.</span><span class=nx>__proto__</span> <span class=o>===</span> <span class=nx>Person</span><span class=p>.</span><span class=nx>prototype</span><span class=p>);</span>          <span class=c1>// true
+</span></span></span></code></pre></td></tr></table></div></div><p>可能的问题：</p><ul><li>为什么 <code>Eve.__proto__</code>和<code>Eve2.__proto__</code> 打印出来都是 <code>Person</code> 对象？<ul><li>这是一个控制台友好显示规则：当一个对象的 <code>__proto__</code> 指向 <code>X.prototype</code> 时，控制台会把这个对象标注为<code>X {}</code></li></ul></li></ul><h3 id=class-extends>class extends</h3><p>新的关键字 <code>class</code> 从ES6开始正式被引入到 JavaScript 中，配合 <code>extends</code> 关键字，可以更轻松地创建对象、实现继承关系。其本质还是原型继承，只是省去了需要我们自己编写的原型链代码，转由 JS 引擎自动实现。</p><p>基础用法和其他语言基本一致，很直观，就不贴了。</p></section><footer class=article-footer></footer></article><aside class=related-content--wrapper><h2 class=section-title>Related content</h2><div class=related-content><div class="flex article-list--tile"><article><a href=/p/java-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/><div class=article-details><h2 class=article-title>Java 序列化与反序列化</h2></div></a></article><article><a href=/p/java-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/><div class=article-details><h2 class=article-title>Java 动态代理</h2></div></a></article><article><a href=/p/tomcat/><div class=article-details><h2 class=article-title>Tomcat</h2></div></a></article><article><a href=/p/diff-myers-%E7%AE%97%E6%B3%95/><div class=article-details><h2 class=article-title>Diff: Myers 算法</h2></div></a></article><article><a href=/p/sqlalchemy-%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/><div class=article-details><h2 class=article-title>SQLAlchemy 简单使用</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2025 B5juan's Blog</section><section class=powerby>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>Theme <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> designed by <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
