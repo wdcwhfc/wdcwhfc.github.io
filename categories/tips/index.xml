@@ -1,4 +1,38 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tips on B5juan's Blog</title><link>https://example.com/categories/tips/</link><description>Recent content in Tips on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Tue, 02 Sep 2025 17:55:19 +0800</lastBuildDate><atom:link href="https://example.com/categories/tips/index.xml" rel="self" type="application/rss+xml"/><item><title>MacOS Wireshark 打开多窗口解决办法</title><link>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</link><pubDate>Tue, 02 Sep 2025 17:55:19 +0800</pubDate><guid>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</guid><description>&lt;p&gt;在macOS环境下，wireshark默认无法同时打开多个窗口，当需要分析、比较多个文件时相比相对麻烦。以下记录两种解决该问题的方案。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tips on B5juan's Blog</title><link>https://example.com/categories/tips/</link><description>Recent content in Tips on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Thu, 22 Jan 2026 18:25:58 +0800</lastBuildDate><atom:link href="https://example.com/categories/tips/index.xml" rel="self" type="application/rss+xml"/><item><title>密码为空时，DataGrip连接数据库报错</title><link>https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/</link><pubDate>Thu, 22 Jan 2026 18:25:58 +0800</pubDate><guid>https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/</guid><description>&lt;p&gt;&lt;strong&gt;⚠️ 不太理解的神经问题&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在使用DataGrip连接数据库时，如果密码为空而你又以常规且正常的方式留空密码字段进行配置，连接会报错：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-1.png"
+width="515"
+height="273"
+srcset="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-1_hu_f6da698a35cbb316.png 480w, https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-1_hu_b5787e1c5a948c7f.png 1024w"
+loading="lazy"
+alt="Error"
+class="gallery-image"
+data-flex-grow="188"
+data-flex-basis="452px"
+&gt;&lt;/p&gt;
+&lt;p&gt;原因在于，你需要在密码字段输入框上右键，点击 &lt;code&gt;Set Empty&lt;/code&gt;，然后 DataGrip 才会理解密码为空而不是你忘输入了或者什么其他情况。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image.png"
+width="547"
+height="339"
+srcset="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image_hu_6c87d33fa7ca4724.png 480w, https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image_hu_45df46e1574c1d37.png 1024w"
+loading="lazy"
+alt="set empty"
+class="gallery-image"
+data-flex-grow="161"
+data-flex-basis="387px"
+&gt;&lt;/p&gt;
+&lt;p&gt;尽管直接&lt;code&gt;留空&lt;/code&gt;和点击 &lt;code&gt;Set Empty&lt;/code&gt; 在输入表单显示表现上完全一致。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-2.png"
+width="863"
+height="523"
+srcset="https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-2_hu_ea92760d77d507d9.png 480w, https://example.com/p/%E5%AF%86%E7%A0%81%E4%B8%BA%E7%A9%BA%E6%97%B6datagrip%E8%BF%9E%E6%8E%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E6%8A%A5%E9%94%99/image-2_hu_ab71e493d4f5a386.png 1024w"
+loading="lazy"
+alt="succeeded"
+class="gallery-image"
+data-flex-grow="165"
+data-flex-basis="396px"
+&gt;&lt;/p&gt;
+&lt;p&gt;大概是有什么考虑，但是还是很神经 (¯―¯٥)&lt;/p&gt;</description></item><item><title>MacOS Wireshark 打开多窗口解决办法</title><link>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</link><pubDate>Tue, 02 Sep 2025 17:55:19 +0800</pubDate><guid>https://example.com/p/macos-wireshark-%E6%89%93%E5%BC%80%E5%A4%9A%E7%AA%97%E5%8F%A3%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/</guid><description>&lt;p&gt;在macOS环境下，wireshark默认无法同时打开多个窗口，当需要分析、比较多个文件时相比相对麻烦。以下记录两种解决该问题的方案。&lt;/p&gt;
 &lt;h2 id="0x00-通过终端临时解决"&gt;0x00 通过终端临时解决
 &lt;/h2&gt;&lt;p&gt;终端环境下配合“-n”、“-a”参数使用open命令打开多个窗口&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
