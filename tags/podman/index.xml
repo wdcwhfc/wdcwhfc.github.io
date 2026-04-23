@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Podman on B5juan's Blog</title><link>https://example.com/tags/podman/</link><description>Recent content in Podman on B5juan's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>B5juan's Blog</copyright><lastBuildDate>Thu, 23 Apr 2026 15:39:30 +0800</lastBuildDate><atom:link href="https://example.com/tags/podman/index.xml" rel="self" type="application/rss+xml"/><item><title>Podman 简单了解</title><link>https://example.com/p/podman-%E7%AE%80%E5%8D%95%E4%BA%86%E8%A7%A3/</link><pubDate>Thu, 23 Apr 2026 15:39:30 +0800</pubDate><guid>https://example.com/p/podman-%E7%AE%80%E5%8D%95%E4%BA%86%E8%A7%A3/</guid><description>&lt;h2 id="0x00-概述"&gt;0x00 概述
+&lt;/h2&gt;&lt;p&gt;Podman 是一个开源的容器管理工具，支持 Linux、Windows 和 macOS三个平台。Podman 首先提供一个 CLI 工具，其兼容所有的 Docker 命令， 如果习惯 &lt;code&gt;docker&lt;/code&gt; 命令，直接把 &lt;code&gt;docker&lt;/code&gt; 设置为 &lt;code&gt;podman&lt;/code&gt; 的别名基本可以无障碍使用, &lt;code&gt;Docker Compose&lt;/code&gt; 与 &lt;code&gt;Dockerfile&lt;/code&gt; 也全都兼容。&lt;/p&gt;
+&lt;p&gt;与其他容器管理工具相同，Podman 依赖一个实现 OCI 标准的容器运行时（默认是 &lt;code&gt;crun&lt;/code&gt;，可更换）来创建、运行容器并与宿主操作系统交互。区别于 Docker 的 &lt;code&gt;containerd&lt;/code&gt;，Podman 使用 &lt;code&gt;libpod&lt;/code&gt; 库来管理镜像、容器和网络。&lt;/p&gt;
+&lt;p&gt;且区别于 Docker 通过 &lt;code&gt;dockerd&lt;/code&gt; 守护进程来进行管理，Podman 直接调用 &lt;code&gt;libpod&lt;/code&gt;，拥有较低的内存开销，尤其无命令时几乎零开销。&lt;/p&gt;
+&lt;h2 id="0x01-for-windows"&gt;0x01 For Windows
+&lt;/h2&gt;&lt;p&gt;在 Windows 系统上，Podman 使用基于 WSL2 的虚拟机作为运行容器的载体。这个虚拟机默认命名为 &lt;code&gt;podman-machine-default&lt;/code&gt;，是一个精简的 Fedora Linux 发行版环境。&lt;/p&gt;
+&lt;p&gt;完整的 podman 引擎就安装在这个虚拟机内，Windows 系统上的 Podman cli 实际通过 &lt;code&gt;REST API&lt;/code&gt; 来与虚拟机中的 podman 引擎进行通信来完整对镜像、容器的管理，对应的镜像和容器数据也保存在虚拟机中。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-text" data-lang="text"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;譬如，PowerShell 中执行: podman run -d nginx
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;实际发生的事情：
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;+------------------+ REST API (socket) +--------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| Windows | ======================&amp;gt; | podman-machine-default |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| | &amp;#34;拉取nginx镜像并运行&amp;#34; | (WSL2 Fedora Linux) |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| podman.exe | | |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| (纯客户端) | | Podman Engine (实际干活的) |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| 不存储任何东西 | &amp;lt;====================== | 镜像: /var/lib/... |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| | &amp;#34;镜像拉好了，容器启动了&amp;#34; | 容器进程: 运行中 |
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;+------------------+ +--------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;所以在 Windows 上执行 &lt;code&gt;podman&lt;/code&gt; 命令，实际和在 podman-machine-default 虚拟机中执行 &lt;code&gt;podman&lt;/code&gt; 命令是完全等价的。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;⚠️：但是 Windows 系统上，podman 连接的是 &lt;code&gt;rootful socket&lt;/code&gt;，默认启动的 podman-machine-default 虚拟机则是普通用户，连接的是 &lt;code&gt;rootless socket&lt;/code&gt;。两者互相隔离，维护的是不同的容器储存目录，前者是 &lt;code&gt;/var/lib/containers&lt;/code&gt;，后者是 &lt;code&gt;~/.local/share/containers&lt;/code&gt;。
+在 podman-machine-default 切换到 root 用户再执行 &lt;code&gt;podman&lt;/code&gt; 命令，才与在 Windows 系统上执行 &lt;code&gt;podman&lt;/code&gt; 命令完全等价。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h2 id="0x02-for-macos"&gt;0x02 For macOS
+&lt;/h2&gt;&lt;p&gt;To be written.&lt;/p&gt;
+&lt;p&gt;(用 Orbstack 吧。)&lt;/p&gt;</description></item></channel></rss>
